@@ -5,6 +5,8 @@
 @import "./season-layout.css";
 @import "./library-toolbar.css";
 @import "./library-list.css";
+@import "./library-progress.css";
+@import "./watching-dialog.css";
 @import "./library-metadata.css";
 @import "./library-controls.css";
 @import "./library-actions.css";

@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\LibraryEntry;
 use App\Entity\Series;
+use App\Entity\Episode;
+use App\Entity\Season;
 use App\Entity\User;
 use App\Repository\LibraryEntryRepository;
 use App\Repository\CatalogSourceRepository;
@@ -13,17 +15,18 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Watching\ProgressService;
 
 class LibraryController extends AbstractController
 {
     #[Route('/bibliotheque', name: 'app_library', methods: ['GET'])]
-    public function index(Request $request, LibraryEntryRepository $entries, CatalogSourceRepository $sources): Response
+    public function index(Request $request, LibraryEntryRepository $entries, CatalogSourceRepository $sources, ProgressService $progress): Response
     {
         $status = (string) $request->query->get('status', ''); $query=trim((string)$request->query->get('q',''));
         if ($status !== '' && !isset(LibraryEntry::STATUSES[$status])) { $status = ''; }
         $libraryEntries = $entries->findForUser($this->user(), $status ?: null, $query ?: null); $networks=[];
-        foreach ($libraryEntries as $entry) { $payload=$sources->findOneBy(['series'=>$entry->getSeries()])?->getPayload() ?? []; $networks[$entry->getSeries()->getId()]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; }
-        return $this->render('library/index.html.twig', ['entries' => $libraryEntries, 'networks'=>$networks, 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
+        $progresses=[]; foreach ($libraryEntries as $entry) { $payload=$sources->findOneBy(['series'=>$entry->getSeries()])?->getPayload() ?? []; $networks[$entry->getSeries()->getId()]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; $progresses[$entry->getId()]=$progress->seriesProgress($this->user(),$entry->getSeries()); }
+        return $this->render('library/index.html.twig', ['entries' => $libraryEntries, 'networks'=>$networks, 'progresses'=>$progresses, 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
     }
 
     #[Route('/bibliotheque/ajouter/{id}', name: 'app_library_add', methods: ['POST'])]
@@ -53,6 +56,15 @@ class LibraryController extends AbstractController
         if (!$this->isCsrfTokenValid('library_remove_'.$id, (string) $request->request->get('_token'))) { throw $this->createAccessDeniedException(); }
         $em->remove($entry); $em->flush(); $this->addFlash('success', 'Série retirée de votre bibliothèque.');
         return $this->redirectToRoute('app_library');
+    }
+
+    #[Route('/bibliotheque/{id}/suivi/{type}/{target}', name: 'app_library_progress', methods: ['POST'], requirements: ['type' => 'episode|season|series', 'target' => '\\d+'])]
+    public function progress(int $id, string $type, int $target, Request $request, LibraryEntryRepository $entries, EntityManagerInterface $em, ProgressService $progress): Response
+    {
+        $entry=$this->entry($id,$entries); if (!$this->isCsrfTokenValid('library_progress_'.$id, (string)$request->request->get('_token'))) throw $this->createAccessDeniedException();
+        $watched=(string)$request->request->get('watched') === '1';
+        try { if($type==='episode') {$episode=$em->find(Episode::class,$target)??throw $this->createNotFoundException();$progress->toggleEpisode($this->user(),$entry,$episode,$watched,(string)$request->request->get('catch_up')==='1');} elseif($type==='season') {$season=$em->find(Season::class,$target)??throw $this->createNotFoundException();$progress->toggleSeason($this->user(),$entry,$season,$watched);} else {$progress->toggleSeries($this->user(),$entry,$watched);} } catch (\LogicException) { throw $this->createAccessDeniedException(); }
+        $this->addFlash('success',$watched?'Progression mise à jour.':'Épisode(s) remis non vus.'); return $this->redirect((string)$request->headers->get('referer', $this->generateUrl('app_library')));
     }
 
     private function user(): User { $user = $this->getUser(); if (!$user instanceof User) { throw $this->createAccessDeniedException(); } return $user; }
