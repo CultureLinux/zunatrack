@@ -1,0 +1,5 @@
+<h1>Réinitialisez votre mot de passe</h1>
+<p>Une demande de réinitialisation a été faite pour votre compte ZunaTrack.</p>
+<p><a href="{{ url('app_reset_password', {token: resetToken.token}) }}">Choisir un nouveau mot de passe</a></p>
+<p>Ce lien expire dans {{ resetToken.expirationMessageKey|trans(resetToken.expirationMessageData, 'ResetPasswordBundle') }}.</p>
+<p>Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet e-mail.</p>

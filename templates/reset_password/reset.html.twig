@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau mot de passe · ZunaTrack{% endblock %}
+
+{% block body %}
+    <section class="auth-card" aria-labelledby="page-title">
+        <p class="eyebrow">Sécurité du compte</p>
+        <h1 id="page-title">Choisissez un nouveau mot de passe.</h1>
+        <p class="lede">Utilisez une phrase de passe unique d’au moins douze caractères.</p>
+        {{ form_start(resetForm, {attr: {class: 'auth-form'}}) }}
+            {{ form_row(resetForm.plainPassword) }}
+            <button class="button button--primary" type="submit">Enregistrer le mot de passe</button>
+        {{ form_end(resetForm) }}
+    </section>
+{% endblock %}

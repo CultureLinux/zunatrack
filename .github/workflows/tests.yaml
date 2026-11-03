@@ -18,4 +18,5 @@ jobs:
         with:
           composer-options: --prefer-dist --no-progress
       - run: php bin/console lint:yaml config
+      - run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
       - run: php bin/phpunit
