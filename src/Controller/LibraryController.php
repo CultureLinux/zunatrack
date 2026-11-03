@@ -6,6 +6,7 @@ use App\Entity\LibraryEntry;
 use App\Entity\Series;
 use App\Entity\User;
 use App\Repository\LibraryEntryRepository;
+use App\Repository\CatalogSourceRepository;
 use App\Repository\SeriesRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,11 +17,13 @@ use Symfony\Component\Routing\Attribute\Route;
 class LibraryController extends AbstractController
 {
     #[Route('/bibliotheque', name: 'app_library', methods: ['GET'])]
-    public function index(Request $request, LibraryEntryRepository $entries): Response
+    public function index(Request $request, LibraryEntryRepository $entries, CatalogSourceRepository $sources): Response
     {
         $status = (string) $request->query->get('status', ''); $query=trim((string)$request->query->get('q',''));
         if ($status !== '' && !isset(LibraryEntry::STATUSES[$status])) { $status = ''; }
-        return $this->render('library/index.html.twig', ['entries' => $entries->findForUser($this->user(), $status ?: null, $query ?: null), 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
+        $libraryEntries = $entries->findForUser($this->user(), $status ?: null, $query ?: null); $networks=[];
+        foreach ($libraryEntries as $entry) { $payload=$sources->findOneBy(['series'=>$entry->getSeries()])?->getPayload() ?? []; $networks[$entry->getSeries()->getId()]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; }
+        return $this->render('library/index.html.twig', ['entries' => $libraryEntries, 'networks'=>$networks, 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
     }
 
     #[Route('/bibliotheque/ajouter/{id}', name: 'app_library_add', methods: ['POST'])]

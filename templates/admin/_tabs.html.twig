@@ -1,0 +1,7 @@
+<nav class="admin-tabs" aria-label="Administration">
+    <a class="{{ active == 'users' ? 'is-active' }}" href="{{ path('app_admin_users') }}">Utilisateurs</a>
+    <a class="{{ active == 'stats' ? 'is-active' }}" href="{{ path('app_admin_stats') }}">Statistiques</a>
+    <a class="{{ active == 'series' ? 'is-active' }}" href="{{ path('app_admin_series') }}">Séries</a>
+    <a class="{{ active == 'library' ? 'is-active' }}" href="{{ path('app_admin_library') }}">Bibliothèque</a>
+    <a class="{{ active == 'tvmaze' ? 'is-active' }}" href="{{ path('app_admin_tvmaze') }}">Données TVmaze</a>
+</nav>

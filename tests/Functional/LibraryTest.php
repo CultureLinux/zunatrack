@@ -3,6 +3,8 @@
 namespace App\Tests\Functional;
 
 use App\Entity\LibraryEntry;
+use App\Entity\Episode;
+use App\Entity\Season;
 use App\Entity\Series;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -73,6 +75,24 @@ class LibraryTest extends WebTestCase
         $this->client->request('POST', '/bibliotheque/'.$entry->getId().'/retirer', ['_token' => 'invalid']);
         self::assertResponseStatusCodeSame(403);
         self::assertNotNull($this->em->getRepository(LibraryEntry::class)->find($entry->getId()));
+    }
+
+    public function testSeriesPageShowsSeasonAndEpisodeArtworkWithTheLibraryModal(): void
+    {
+        $user = $this->user('viewer@example.test');
+        $series = (new Series())->setTitle('With artwork');
+        $season = new Season(1); $season->setName('Première saison'); $season->setCoverUrl('/media/posters/season.jpg');
+        $episode = new Episode(1); $episode->setTitle('Pilot'); $episode->setCoverUrl('/media/posters/episode.jpg'); $episode->setRuntime(52);
+        $season->addEpisode($episode); $series->addSeason($season);
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $this->em->persist(new LibraryEntry($user, $series)); $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/series/'.$series->getId().'?saison=1');
+        self::assertSelectorExists('dialog.library-modal[data-modal-target="dialog"]');
+        self::assertSelectorExists('.series-poster[src="/media/posters/season.jpg"]');
+        self::assertSelectorTextContains('.episode-card', '52 min');
+        self::assertSelectorExists('.episode-card img[src="/media/posters/episode.jpg"]');
     }
 
     private function user(string $email): User
