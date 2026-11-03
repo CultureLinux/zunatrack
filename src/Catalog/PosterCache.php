@@ -1,0 +1,4 @@
+<?php
+namespace App\Catalog;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+final class PosterCache { public function __construct(private HttpClientInterface $client,private string $projectDir,private CatalogMetrics $metrics){} public function store(?string $url):?string{if(!$url)return null;$path=parse_url($url,PHP_URL_PATH);$ext=in_array(strtolower(pathinfo((string)$path,PATHINFO_EXTENSION)),['jpg','jpeg','png','webp'],true)?strtolower(pathinfo((string)$path,PATHINFO_EXTENSION)):'jpg';$name=hash('sha256',$url).'.'.$ext;$dir=$this->projectDir.'/public/media/posters';if(is_file($dir.'/'.$name)){$this->metrics->hit('local');return '/media/posters/'.$name;}if(!is_dir($dir))mkdir($dir,0775,true);try{$body=$this->client->request('GET',$url,['timeout'=>8])->getContent();file_put_contents($dir.'/'.$name,$body);$this->metrics->hit('provider');return '/media/posters/'.$name;}catch(\Throwable){return null;}} }
