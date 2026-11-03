@@ -23,6 +23,7 @@ class LibraryTest extends WebTestCase
         $this->client = static::createClient();
         $this->em = self::getContainer()->get(EntityManagerInterface::class);
         $connection = $this->em->getConnection();
+        $connection->executeStatement('DELETE FROM episode_progress');
         $connection->executeStatement('DELETE FROM library_entry');
         $connection->executeStatement('DELETE FROM series');
         $connection->executeStatement('DELETE FROM user');
@@ -93,6 +94,18 @@ class LibraryTest extends WebTestCase
         self::assertSelectorExists('.series-poster[src="/media/posters/season.jpg"]');
         self::assertSelectorTextContains('.episode-card', '52 min');
         self::assertSelectorExists('.episode-card img[src="/media/posters/episode.jpg"]');
+    }
+
+    public function testWatchingAnAdvancedEpisodeCanCatchUpAndBeToggledBack(): void
+    {
+        $user=$this->user('progress@example.test'); $series=(new Series())->setTitle('Progress show'); $season=new Season(1);
+        foreach ([1,2,3] as $number) { $episode=new Episode($number); $episode->setTitle('Episode '.$number); $episode->setAirDate(new \DateTimeImmutable('2026-01-01')); $season->addEpisode($episode); }
+        $series->addSeason($season); $this->em->persist($user); $this->em->persist($series); $this->em->flush(); $entry=new LibraryEntry($user,$series); $this->em->persist($entry); $this->em->flush();
+        $this->client->loginUser($user); $crawler=$this->client->request('GET','/series/'.$series->getId().'?saison=1'); $token=$crawler->filter('form.episode-toggle input[name="_token"]')->last()->attr('value'); $third=$season->getEpisodes()->last();
+        $this->client->request('POST','/bibliotheque/'.$entry->getId().'/suivi/episode/'.$third->getId(),['_token'=>$token,'watched'=>'1','catch_up'=>'1']); self::assertResponseRedirects();
+        self::assertSame(3, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM episode_progress'));
+        $this->client->request('POST','/bibliotheque/'.$entry->getId().'/suivi/episode/'.$third->getId(),['_token'=>$token,'watched'=>'0']); self::assertResponseRedirects();
+        self::assertSame(2, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM episode_progress'));
     }
 
     private function user(string $email): User

@@ -1,0 +1,1 @@
+.catchup-dialog{margin:auto}.catchup-dialog[open]{display:block;position:fixed;inset:0;width:min(calc(100% - 2rem),34rem);height:max-content;max-height:calc(100dvh - 2rem)}
