@@ -36,6 +36,7 @@ class Series
     public function getPremieredAt(): ?\DateTimeImmutable { return $this->premieredAt; }
     public function setPremieredAt(?\DateTimeImmutable $value): static { $this->premieredAt = $value; return $this; }
     public function getEndedAt(): ?\DateTimeImmutable { return $this->endedAt; }
+    public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
     public function setEndedAt(?\DateTimeImmutable $value): static { $this->endedAt = $value; return $this; }
     public function touch(): void { $this->updatedAt = new \DateTimeImmutable(); }
     /** @return Collection<int, Season> */ public function getSeasons(): Collection { return $this->seasons; }
