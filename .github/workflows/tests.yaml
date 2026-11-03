@@ -1,0 +1,21 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist --no-progress
+      - run: php bin/console lint:yaml config
+      - run: php bin/phpunit
