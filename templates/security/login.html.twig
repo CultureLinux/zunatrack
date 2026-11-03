@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion · ZunaTrack{% endblock %}
+
+{% block body %}
+    <section class="auth-card" aria-labelledby="page-title">
+        <p class="eyebrow">Votre carnet de séries</p>
+        <h1 id="page-title">Bon retour.</h1>
+        <p class="lede">Reprenez exactement là où vous vous étiez arrêté.</p>
+
+        {% if error %}
+            <div class="form-error" role="alert">Identifiants incorrects.</div>
+        {% endif %}
+
+        <form method="post" class="auth-form">
+            <label for="username">Adresse e-mail</label>
+            <input id="username" name="_username" type="email" value="{{ last_username }}" autocomplete="email" required autofocus>
+            <label for="password">Mot de passe</label>
+            <input id="password" name="_password" type="password" autocomplete="current-password" required>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            <button class="button button--primary" type="submit">Se connecter</button>
+        </form>
+        <nav class="auth-links" aria-label="Accès au compte">
+            <a href="{{ path('app_forgot_password_request') }}">Mot de passe oublié ?</a>
+            <a href="{{ path('app_register') }}">Créer un compte</a>
+        </nav>
+    </section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mot de passe oublié · ZunaTrack{% endblock %}
+
+{% block body %}
+    <section class="auth-card" aria-labelledby="page-title">
+        <p class="eyebrow">Accès au compte</p>
+        <h1 id="page-title">On vous aide.</h1>
+        <p class="lede">Saisissez votre adresse e-mail. Si un compte existe, nous vous enverrons un lien valable une heure.</p>
+        {{ form_start(requestForm, {attr: {class: 'auth-form'}}) }}
+            {{ form_row(requestForm.email) }}
+            <button class="button button--primary" type="submit">Envoyer le lien</button>
+        {{ form_end(requestForm) }}
+        <p class="auth-links auth-links--single"><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+    </section>
+{% endblock %}

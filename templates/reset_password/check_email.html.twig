@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vérifiez vos e-mails · ZunaTrack{% endblock %}
+
+{% block body %}
+    <section class="auth-card" aria-labelledby="page-title">
+        <p class="eyebrow">Demande envoyée</p>
+        <h1 id="page-title">Regardez votre boîte mail.</h1>
+        <p class="lede">Si cette adresse correspond à un compte, un lien de réinitialisation vient d’être envoyé. Il expire dans une heure.</p>
+        <p class="auth-links auth-links--single"><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+    </section>
+{% endblock %}

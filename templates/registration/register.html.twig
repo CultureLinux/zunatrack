@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte · ZunaTrack{% endblock %}
+
+{% block body %}
+    <section class="auth-card" aria-labelledby="page-title">
+        <p class="eyebrow">C’est parti</p>
+        <h1 id="page-title">Créez votre espace.</h1>
+        <p class="lede">Gardez vos séries, vos saisons et votre progression au même endroit.</p>
+        {{ form_start(registrationForm, {attr: {class: 'auth-form'}}) }}
+            {{ form_row(registrationForm.email) }}
+            {{ form_row(registrationForm.plainPassword) }}
+            <button class="button button--primary" type="submit">Créer mon compte</button>
+        {{ form_end(registrationForm) }}
+        <p class="auth-links auth-links--single">Déjà inscrit ? <a href="{{ path('app_login') }}">Se connecter</a></p>
+    </section>
+{% endblock %}
