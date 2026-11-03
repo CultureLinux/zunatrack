@@ -1,0 +1,2 @@
+<?php
+namespace App\Repository; use App\Entity\CatalogSource; use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository; use Doctrine\Persistence\ManagerRegistry; /** @extends ServiceEntityRepository<CatalogSource> */ class CatalogSourceRepository extends ServiceEntityRepository { public function __construct(ManagerRegistry $registry){parent::__construct($registry,CatalogSource::class);} public function findByProviderId(string $provider,string $id):?CatalogSource{return $this->findOneBy(['provider'=>$provider,'externalId'=>$id]);} }

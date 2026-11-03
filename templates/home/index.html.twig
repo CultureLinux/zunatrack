@@ -6,10 +6,7 @@
     <section class="auth-card home-card" aria-labelledby="page-title">
         <p class="eyebrow">Espace personnel</p>
         <h1 id="page-title">Bienvenue, {{ app.user.email }}.</h1>
-        <p class="lede">Votre bibliothèque est prête. Le catalogue de séries arrivera au lot suivant.</p>
-        <form action="{{ path('app_logout') }}" method="post">
-            <input type="hidden" name="_token" value="{{ csrf_token('logout') }}">
-            <button class="button button--secondary" type="submit">Se déconnecter</button>
-        </form>
+        <p class="lede">Votre espace est prêt. Commencez par rechercher une série dans le catalogue.</p>
+        <a class="button button--primary" href="{{ path('app_catalog') }}">Explorer le catalogue</a>
     </section>
 {% endblock %}

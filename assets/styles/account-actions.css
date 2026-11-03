@@ -1,0 +1,5 @@
+.site-account > a { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .55rem .8rem; color: var(--foreground); font-size: .875rem; }
+.site-account > a.is-active, .site-account > a:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+.site-account .theme-icon { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; padding: .55rem; }
+.site-account .theme-icon svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.mobile-menu button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: var(--accent); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
