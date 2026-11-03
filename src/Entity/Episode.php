@@ -1,0 +1,6 @@
+<?php
+namespace App\Entity;
+use Doctrine\ORM\Mapping as ORM;
+#[ORM\Entity]
+#[ORM\UniqueConstraint(name:'uniq_episode_number',columns:['season_id','number'])]
+class Episode { #[ORM\Id, ORM\GeneratedValue, ORM\Column] private ?int $id=null; #[ORM\ManyToOne(inversedBy:'episodes')] #[ORM\JoinColumn(nullable:false,onDelete:'CASCADE')] private Season $season; #[ORM\Column] private int $number; #[ORM\Column(length:255)] private string $title=''; #[ORM\Column(type:'text',nullable:true)] private ?string $summary=null; #[ORM\Column(nullable:true)] private ?\DateTimeImmutable $airDate=null; public function __construct(int $number){$this->number=$number;} public function setSeason(Season $season):void{$this->season=$season;} public function setTitle(string $title):void{$this->title=$title;} public function setSummary(?string $summary):void{$this->summary=$summary;} public function setAirDate(?\DateTimeImmutable $date):void{$this->airDate=$date;} public function getNumber():int{return $this->number;} public function getTitle():string{return $this->title;} public function getSummary():?string{return $this->summary;} public function getAirDate():?\DateTimeImmutable{return $this->airDate;} }
