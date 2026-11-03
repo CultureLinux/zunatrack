@@ -53,9 +53,17 @@ class AccountAccessTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Bienvenue, moi@example.test.');
 
+        $crawler = $this->client->request('GET', '/preferences');
+        self::assertSelectorExists('.accent-swatch[data-accent="blue"]');
+        $this->client->submit($crawler->selectButton('Enregistrer')->form(['locale' => 'fr', 'accent' => 'rose']));
+        self::assertResponseRedirects('/preferences');
+        $crawler = $this->client->followRedirect();
+        self::assertSelectorExists('html[data-accent="rose"]');
+
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'moi@example.test']);
         self::assertInstanceOf(User::class, $user);
+        self::assertSame('rose', $user->getAccent());
         $token = self::getContainer()->get(ResetPasswordHelperInterface::class)->generateResetToken($user);
 
         $this->client->request('GET', '/reinitialiser/'.$token->getToken());
