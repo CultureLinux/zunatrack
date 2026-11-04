@@ -6,7 +6,7 @@
     <div class="series-cover"><div class="cover-frame">
       {% if selectedSeasonEntity and selectedSeasonEntity.coverUrl %}<img class="series-poster" src="{{ selectedSeasonEntity.coverUrl }}" alt="Couverture de la saison {{ selectedSeasonEntity.number }}">
       {% elseif series.posterUrl %}<img class="series-poster" src="{{ series.posterUrl }}" alt="Affiche de {{ series.title }}">{% endif %}
-      {% set progress = selectedSeasonEntity ? seasonProgress[selectedSeasonEntity.number] : seriesProgress %}
+      {% set progress = selectedSeasonEntity ? seasonProgress[selectedSeasonEntity.number]|default(null) : seriesProgress %}
       {% if entry and progress %}{% if progress.complete %}<span class="watched-mark" aria-label="Entièrement vu">✓</span>{% endif %}<span class="cover-progress" style="--progress:{{ progress.percent }}%"><span>{{ progress.watched }}/{{ progress.total }}</span></span>{% endif %}
     </div></div>
     <div class="series-summary">

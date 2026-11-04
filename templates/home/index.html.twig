@@ -1,7 +1,22 @@
 {% extends 'base.html.twig' %}
 {% block title %}Accueil · ZunaTrack{% endblock %}
 {% block body %}
+{% if not app.user %}
+<div class="landing-page">
+    <header class="landing-nav">
+        <a class="landing-brand" href="{{ path('app_home') }}"><img src="{{ asset('images/zunatrack-mark.svg') }}" alt="" width="40" height="40">ZunaTrack</a>
+        <nav class="landing-nav__actions" aria-label="Compte"><a class="landing-login" href="{{ path('app_login') }}">Se connecter</a><a class="button button--primary" href="{{ path('app_register') }}">Créer un compte</a></nav>
+    </header>
+    <section class="landing-hero" aria-labelledby="page-title">
+        <div class="landing-copy"><p class="eyebrow">Votre suivi de séries, chez vous</p><h1 id="page-title">Vos séries,<br>au bon moment.</h1><p class="landing-lede">ZunaTrack rassemble votre bibliothèque, votre progression et les prochaines sorties dans un espace personnel, calme et auto-hébergé.</p><div class="landing-actions"><a class="button button--primary" href="{{ path('app_register') }}">Commencer gratuitement</a><a class="button button--secondary" href="{{ path('app_login') }}">J’ai déjà un compte</a></div></div>
+        <figure class="landing-visual"><img src="{{ asset('images/zunatrack-banner-v2.png') }}" alt="Un salon nocturne contemporain avec un écran, un calendrier d’épisodes et des cartes de séries." width="1536" height="1024"></figure>
+    </section>
+    <section class="landing-features" aria-labelledby="features-title"><div><p class="eyebrow">Tout pour suivre, sans bruit</p><h2 id="features-title">Retrouvez le fil de vos histoires.</h2></div><div class="landing-feature-list"><article><span aria-hidden="true">01</span><h3>Une bibliothèque à votre image</h3><p>Ajoutez vos séries, donnez-leur un statut, une note et gardez vos choix à portée de main.</p></article><article><span aria-hidden="true">02</span><h3>Une progression claire</h3><p>Cochez les épisodes vus et reprenez immédiatement là où votre dernière séance s’est arrêtée.</p></article><article><span aria-hidden="true">03</span><h3>Le calendrier qui veille</h3><p>Repérez les diffusions à venir et activez les notifications desktop pour ne rien laisser passer.</p></article></div></section>
+    <section class="landing-closing"><p class="eyebrow">Une application, vos données</p><h2>Suivez vos séries à votre rythme.</h2><a class="button button--primary" href="{{ path('app_register') }}">Créer mon espace</a></section>
+</div>
+{% else %}
 <section class="home" aria-labelledby="page-title"><header class="page-header"><p class="eyebrow">Espace personnel</p><h1 id="page-title">Bienvenue, {{ app.user.email }}.</h1><h2>À voir maintenant</h2><p class="lede">Les prochains épisodes diffusés que vous n’avez pas encore vus.</p></header>
 {% if availableEpisodes %}<div class="available-episodes">{% for item in availableEpisodes %}<article>{% if item.episode.coverUrl %}<img src="{{ item.episode.coverUrl }}" alt="Image de l’épisode {{ item.episode.title }}" loading="lazy">{% elseif item.entry.series.posterUrl %}<img src="{{ item.entry.series.posterUrl }}" alt="Affiche de {{ item.entry.series.title }}" loading="lazy">{% endif %}<div><p class="eyebrow">{{ item.entry.series.title }}</p><h2>S{{ '%02d'|format(item.season.number) }}E{{ '%02d'|format(item.episode.number) }} — {{ item.episode.title }}</h2>{% if item.episode.airDate %}<p class="lede">Diffusé le {{ item.episode.airDate|date('d/m/Y') }}</p>{% endif %}</div><a class="button button--primary" href="{{ path('app_series_show',{id:item.entry.series.id,saison:item.season.number}) }}#episode-{{ item.episode.id }}">Voir l’épisode</a></article>{% endfor %}</div>{% else %}<div class="library-empty"><h2>Rien à regarder pour le moment.</h2><p class="lede">Ajoutez une série ou attendez la prochaine diffusion.</p><a class="button button--primary" href="{{ path('app_catalog') }}">Explorer le catalogue</a></div>{% endif %}
 </section>
+{% endif %}
 {% endblock %}

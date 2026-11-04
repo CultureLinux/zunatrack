@@ -53,6 +53,17 @@ class AdminTest extends WebTestCase
         self::assertSelectorExists('form[action="/admin/utilisateurs/'.$member->getId().'/usurper"]');
     }
 
+    public function testAdminSeriesListShowsPostersAndPaginates(): void
+    {
+        $admin = $this->user('catalog-admin@example.test', true); $this->em->persist($admin);
+        for ($number = 1; $number <= 25; $number++) $this->em->persist((new Series())->setTitle(sprintf('Série %02d', $number))->setPosterUrl($number === 1 ? '/media/posters/admin.jpg' : null));
+        $this->em->flush();
+        $client = static::getClient(); $client->loginUser($admin); $client->request('GET', '/admin/series');
+        self::assertSelectorExists('.admin-series__poster[src="/media/posters/admin.jpg"]');
+        self::assertSelectorExists('.admin-pagination a[href="/admin/series?page=2"]');
+        self::assertSelectorTextNotContains('.admin-table', 'Série 25');
+    }
+
     private function user(string $email, bool $admin = false): User
     {
         $user = (new User())->setEmail($email)->setRoles($admin ? ['ROLE_ADMIN'] : []);

@@ -16,8 +16,11 @@ class HomeController extends AbstractController
     #[Route('/', name: 'app_home')]
     public function __invoke(LibraryEntryRepository $entries, ProgressService $progress, CatalogService $catalog): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-        $user = $this->getUser(); if (!$user instanceof User) throw $this->createAccessDeniedException();
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->render('home/index.html.twig');
+        }
+
         $available = [];
         foreach ($entries->findForUser($user) as $entry) {
             if (in_array($entry->getStatus(), [LibraryEntry::STATUS_COMPLETED, LibraryEntry::STATUS_DROPPED, LibraryEntry::STATUS_PAUSED], true)) continue;

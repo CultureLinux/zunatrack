@@ -21,7 +21,9 @@ class CatalogController extends AbstractController
         $query = trim((string) $request->query->get('q', ''));
         $actor = trim((string) $request->query->get('acteur', ''));
         $actorResults = $actor !== '' ? $series->findByActor($actor) : [];
-        return $this->render('catalog/index.html.twig', ['query' => $query, 'actor' => $actor, 'results' => $actor !== '' ? $actorResults : ($query !== '' ? $catalog->search($query) : [])]);
+        $results = $actor !== '' ? $actorResults : ($query !== '' ? $catalog->search($query) : []);
+        $suggestions = $actor === '' && $query === '' ? $series->suggestForUser($this->getUser() instanceof User ? $this->getUser() : null) : [];
+        return $this->render('catalog/index.html.twig', compact('query', 'actor', 'results', 'suggestions'));
     }
     #[Route('/catalogue/tvmaze/{id}', name: 'app_catalog_import', requirements: ['id'=>'\d+'])]
     public function import(string $id, CatalogService $catalog): Response { $series=$catalog->import($id); return $this->redirectToRoute('app_series_show',['id'=>$series->getId()]); }
