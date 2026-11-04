@@ -22,7 +22,7 @@ class LibraryController extends AbstractController
     #[Route('/bibliotheque', name: 'app_library', methods: ['GET'])]
     public function index(Request $request, LibraryEntryRepository $entries, CatalogSourceRepository $sources, ProgressService $progress): Response
     {
-        $status = (string) $request->query->get('status', ''); $query=trim((string)$request->query->get('q',''));
+        $status = $request->query->has('status') ? (string) $request->query->get('status', '') : LibraryEntry::STATUS_WATCHING; $query=trim((string)$request->query->get('q',''));
         if ($status !== '' && !isset(LibraryEntry::STATUSES[$status])) { $status = ''; }
         $libraryEntries = $entries->findForUser($this->user(), $status ?: null, $query ?: null); $networks=[];
         $progresses=[]; foreach ($libraryEntries as $entry) { $payload=$sources->findOneBy(['series'=>$entry->getSeries()])?->getPayload() ?? []; $networks[$entry->getSeries()->getId()]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; $progresses[$entry->getId()]=$progress->seriesProgress($this->user(),$entry->getSeries()); }
@@ -49,6 +49,16 @@ class LibraryController extends AbstractController
         return $this->redirectToRoute('app_series_show', ['id' => $entry->getSeries()->getId()]);
     }
 
+    #[Route('/bibliotheque/{id}/statut', name: 'app_library_status', methods: ['POST'])]
+    public function status(int $id, Request $request, LibraryEntryRepository $entries, EntityManagerInterface $em): Response
+    {
+        $entry = $this->entry($id, $entries);
+        if (!$this->isCsrfTokenValid('library_status_'.$id, (string) $request->request->get('_token'))) throw $this->createAccessDeniedException();
+        try { $entry->setStatus((string) $request->request->get('status')); } catch (\InvalidArgumentException) { throw $this->createNotFoundException(); }
+        $em->flush(); $this->addFlash('success', 'Statut mis à jour.');
+        return $this->redirect((string) $request->headers->get('referer', $this->generateUrl('app_library')));
+    }
+
     #[Route('/bibliotheque/{id}/retirer', name: 'app_library_remove', methods: ['POST'])]
     public function remove(int $id, Request $request, LibraryEntryRepository $entries, EntityManagerInterface $em): Response
     {
@@ -64,7 +74,12 @@ class LibraryController extends AbstractController
         $entry=$this->entry($id,$entries); if (!$this->isCsrfTokenValid('library_progress_'.$id, (string)$request->request->get('_token'))) throw $this->createAccessDeniedException();
         $watched=(string)$request->request->get('watched') === '1';
         try { if($type==='episode') {$episode=$em->find(Episode::class,$target)??throw $this->createNotFoundException();$progress->toggleEpisode($this->user(),$entry,$episode,$watched,(string)$request->request->get('catch_up')==='1');} elseif($type==='season') {$season=$em->find(Season::class,$target)??throw $this->createNotFoundException();$progress->toggleSeason($this->user(),$entry,$season,$watched);} else {$progress->toggleSeries($this->user(),$entry,$watched);} } catch (\LogicException) { throw $this->createAccessDeniedException(); }
-        $this->addFlash('success',$watched?'Progression mise à jour.':'Épisode(s) remis non vus.'); return $this->redirect((string)$request->headers->get('referer', $this->generateUrl('app_library')));
+        $progress->synchronizeLibraryStatus($this->user(), $entry);
+        $this->addFlash('success',$watched?'Progression mise à jour.':'Épisode(s) remis non vus.');
+        $referer = (string) $request->headers->get('referer', $this->generateUrl('app_library'));
+        $anchor = (string) $request->request->get('return_anchor', '');
+        if ($type === 'episode' && preg_match('/^episode-\\d+$/', $anchor)) $referer .= '#'.$anchor;
+        return $this->redirect($referer);
     }
 
     private function user(): User { $user = $this->getUser(); if (!$user instanceof User) { throw $this->createAccessDeniedException(); } return $user; }
