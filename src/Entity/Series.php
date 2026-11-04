@@ -16,6 +16,7 @@ class Series
     #[ORM\Column(length: 500, nullable: true)] private ?string $posterUrl = null;
     #[ORM\Column(length: 40, nullable: true)] private ?string $status = null;
     #[ORM\Column(type: 'json')] private array $genres = [];
+    /** @var list<array{name:string,character:?string,imageUrl:?string}> */ #[ORM\Column(type: 'json')] private array $cast = [];
     #[ORM\Column(nullable: true)] private ?\DateTimeImmutable $premieredAt = null;
     #[ORM\Column(nullable: true)] private ?\DateTimeImmutable $endedAt = null;
     #[ORM\Column] private \DateTimeImmutable $updatedAt;
@@ -33,6 +34,8 @@ class Series
     public function setStatus(?string $value): static { $this->status = $value; return $this; }
     public function getGenres(): array { return $this->genres; }
     public function setGenres(array $value): static { $this->genres = $value; return $this; }
+    /** @return list<array{name:string,character:?string,imageUrl:?string}> */ public function getCast(): array { return $this->cast; }
+    /** @param list<array{name:string,character:?string,imageUrl:?string}> $value */ public function setCast(array $value): static { $this->cast = $value; return $this; }
     public function getPremieredAt(): ?\DateTimeImmutable { return $this->premieredAt; }
     public function setPremieredAt(?\DateTimeImmutable $value): static { $this->premieredAt = $value; return $this; }
     public function getEndedAt(): ?\DateTimeImmutable { return $this->endedAt; }

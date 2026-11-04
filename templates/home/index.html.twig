@@ -1,12 +1,7 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}Ma bibliothèque · ZunaTrack{% endblock %}
-
+{% block title %}Accueil · ZunaTrack{% endblock %}
 {% block body %}
-    <section class="auth-card home-card" aria-labelledby="page-title">
-        <p class="eyebrow">Espace personnel</p>
-        <h1 id="page-title">Bienvenue, {{ app.user.email }}.</h1>
-        <p class="lede">Votre espace est prêt. Commencez par rechercher une série dans le catalogue.</p>
-        <a class="button button--primary" href="{{ path('app_catalog') }}">Explorer le catalogue</a>
-    </section>
+<section class="home" aria-labelledby="page-title"><header class="page-header"><p class="eyebrow">Espace personnel</p><h1 id="page-title">Bienvenue, {{ app.user.email }}.</h1><h2>À voir maintenant</h2><p class="lede">Les prochains épisodes diffusés que vous n’avez pas encore vus.</p></header>
+{% if availableEpisodes %}<div class="available-episodes">{% for item in availableEpisodes %}<article>{% if item.episode.coverUrl %}<img src="{{ item.episode.coverUrl }}" alt="Image de l’épisode {{ item.episode.title }}" loading="lazy">{% elseif item.entry.series.posterUrl %}<img src="{{ item.entry.series.posterUrl }}" alt="Affiche de {{ item.entry.series.title }}" loading="lazy">{% endif %}<div><p class="eyebrow">{{ item.entry.series.title }}</p><h2>S{{ '%02d'|format(item.season.number) }}E{{ '%02d'|format(item.episode.number) }} — {{ item.episode.title }}</h2>{% if item.episode.airDate %}<p class="lede">Diffusé le {{ item.episode.airDate|date('d/m/Y') }}</p>{% endif %}</div><a class="button button--primary" href="{{ path('app_series_show',{id:item.entry.series.id,saison:item.season.number}) }}#episode-{{ item.episode.id }}">Voir l’épisode</a></article>{% endfor %}</div>{% else %}<div class="library-empty"><h2>Rien à regarder pour le moment.</h2><p class="lede">Ajoutez une série ou attendez la prochaine diffusion.</p><a class="button button--primary" href="{{ path('app_catalog') }}">Explorer le catalogue</a></div>{% endif %}
+</section>
 {% endblock %}
