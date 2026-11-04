@@ -22,11 +22,14 @@ class LibraryController extends AbstractController
     #[Route('/bibliotheque', name: 'app_library', methods: ['GET'])]
     public function index(Request $request, LibraryEntryRepository $entries, CatalogSourceRepository $sources, ProgressService $progress): Response
     {
-        $status = $request->query->has('status') ? (string) $request->query->get('status', '') : LibraryEntry::STATUS_WATCHING; $query=trim((string)$request->query->get('q',''));
+        $status = $request->query->has('status') ? (string) $request->query->get('status', '') : LibraryEntry::STATUS_WATCHING; $query=trim((string)$request->query->get('q','')); $genre=trim((string)$request->query->get('genre','')); $network=trim((string)$request->query->get('network',''));
         if ($status !== '' && !isset(LibraryEntry::STATUSES[$status])) { $status = ''; }
-        $libraryEntries = $entries->findForUser($this->user(), $status ?: null, $query ?: null); $networks=[];
-        $progresses=[]; foreach ($libraryEntries as $entry) { $payload=$sources->findOneBy(['series'=>$entry->getSeries()])?->getPayload() ?? []; $networks[$entry->getSeries()->getId()]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; $progresses[$entry->getId()]=$progress->seriesProgress($this->user(),$entry->getSeries()); }
-        return $this->render('library/index.html.twig', ['entries' => $libraryEntries, 'networks'=>$networks, 'progresses'=>$progresses, 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
+        $libraryEntries = $entries->findForUser($this->user(), $status ?: null, $query ?: null); $networks=[]; $genresBySeries=[]; $availableGenres=[]; $availableNetworks=[];
+        foreach ($libraryEntries as $entry) { $series=$entry->getSeries(); $payload=$sources->findOneBy(['series'=>$series])?->getPayload() ?? []; $seriesId=$series->getId(); $genresBySeries[$seriesId]=$series->getGenres(); foreach($genresBySeries[$seriesId] as $value)$availableGenres[$value]=true; $networks[$seriesId]=$payload['network']['name'] ?? $payload['webChannel']['name'] ?? null; if($networks[$seriesId])$availableNetworks[$networks[$seriesId]]=true; }
+        $libraryEntries=array_values(array_filter($libraryEntries, static fn(LibraryEntry $entry):bool => ($genre==='' || in_array($genre,$genresBySeries[$entry->getSeries()->getId()] ?? [],true)) && ($network==='' || $network===($networks[$entry->getSeries()->getId()] ?? null))));
+        $progresses=[]; foreach ($libraryEntries as $entry) $progresses[$entry->getId()]=$progress->seriesProgress($this->user(),$entry->getSeries());
+        $genres=array_keys($availableGenres); $networkOptions=array_keys($availableNetworks); sort($genres); sort($networkOptions);
+        return $this->render('library/index.html.twig', ['entries' => $libraryEntries, 'networks'=>$networks, 'genresBySeries'=>$genresBySeries, 'genres'=>$genres, 'networkOptions'=>$networkOptions, 'selectedGenre'=>$genre, 'selectedNetwork'=>$network, 'progresses'=>$progresses, 'status' => $status, 'query'=>$query, 'statuses' => LibraryEntry::STATUSES]);
     }
 
     #[Route('/bibliotheque/ajouter/{id}', name: 'app_library_add', methods: ['POST'])]

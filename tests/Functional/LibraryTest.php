@@ -3,6 +3,7 @@
 namespace App\Tests\Functional;
 
 use App\Entity\LibraryEntry;
+use App\Entity\CatalogSource;
 use App\Entity\Episode;
 use App\Entity\Season;
 use App\Entity\Series;
@@ -25,6 +26,7 @@ class LibraryTest extends WebTestCase
         $connection = $this->em->getConnection();
         $connection->executeStatement('DELETE FROM episode_progress');
         $connection->executeStatement('DELETE FROM library_entry');
+        $connection->executeStatement('DELETE FROM catalog_source');
         $connection->executeStatement('DELETE FROM series');
         $connection->executeStatement('DELETE FROM user');
     }
@@ -85,6 +87,28 @@ class LibraryTest extends WebTestCase
         $this->client->request('POST', '/bibliotheque/'.$entry->getId().'/retirer', ['_token' => 'invalid']);
         self::assertResponseStatusCodeSame(403);
         self::assertNotNull($this->em->getRepository(LibraryEntry::class)->find($entry->getId()));
+    }
+
+    public function testLibraryCanDisplayAndFilterProviderGenreAndNetworkTags(): void
+    {
+        $user = $this->user('tag-filter@example.test');
+        $drama = (new Series())->setTitle('Arte drama')->setGenres(['Drame', 'Thriller']);
+        $comedy = (new Series())->setTitle('Comedy network')->setGenres(['Comédie']);
+        $this->em->persist($user); $this->em->persist($drama); $this->em->persist($comedy); $this->em->flush();
+        $arte = new CatalogSource('tvmaze', '101', $drama); $arte->refresh(['network' => ['name' => 'Arte']], new \DateTimeImmutable('+1 day'));
+        $netflix = new CatalogSource('tvmaze', '102', $comedy); $netflix->refresh(['webChannel' => ['name' => 'Netflix']], new \DateTimeImmutable('+1 day'));
+        $this->em->persist($arte); $this->em->persist($netflix); $this->em->persist(new LibraryEntry($user, $drama)); $this->em->persist(new LibraryEntry($user, $comedy)); $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/bibliotheque?status=&genre=Drame&network=Arte');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.library-card', 'Arte drama');
+        self::assertSelectorTextContains('.library-card', 'Drame');
+        self::assertSelectorTextContains('.library-card', 'Arte');
+        self::assertSelectorNotExists('.library-card :contains("Comedy network")');
+        self::assertSelectorExists('select[name="genre"] option[value="Drame"]');
+        self::assertSelectorExists('select[name="network"] option[value="Arte"]');
     }
 
     public function testSeriesPageShowsSeasonAndEpisodeArtworkWithTheLibraryModal(): void

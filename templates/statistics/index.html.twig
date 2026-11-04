@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mes statistiques · ZunaTrack{% endblock %}
+{% block body %}
+<section class="statistics" aria-labelledby="page-title">
+    <header class="page-header"><p class="eyebrow">Votre rythme</p><h1 id="page-title">Vos statistiques</h1><p class="lede">Votre suivi en un coup d’œil, sans transformer votre bibliothèque en tableau de bord compliqué.</p></header>
+    {% if statistics.empty %}
+        <div class="statistics-empty"><h2>Les statistiques arriveront avec vos premières séries.</h2><p>Ajoutez une série, puis cochez un épisode vu pour commencer à suivre votre rythme.</p><a class="button button--primary" href="{{ path('app_catalog') }}">Ajouter une série</a></div>
+    {% else %}
+        <div class="statistics-overview" aria-label="Indicateurs principaux">
+            <article><span>Épisodes vus</span><strong data-stat="watched-episodes">{{ statistics.overview.watched }}</strong><small>dans votre historique</small></article>
+            <article><span>Temps de visionnage</span><strong data-stat="watch-time">{{ statistics.overview.watchTime }}</strong><small>durées connues uniquement</small></article>
+            <article><span>Séries terminées</span><strong>{{ statistics.overview.completed }}</strong><small>dans votre bibliothèque</small></article>
+            <article><span>À rattraper</span><strong data-stat="catch-up">{{ statistics.overview.catchUp }}</strong><small>épisodes déjà diffusés</small></article>
+        </div>
+        <div class="statistics-layout">
+            <article class="statistics-panel statistics-activity"><header><h2>Épisodes vus</h2><p>Les 7 derniers jours</p></header><div class="statistics-bars" role="img" aria-label="Activité des sept derniers jours : {% for day in statistics.dailyActivity %}{{ day.label }} {{ day.count }} épisode{{ day.count > 1 ? 's' }}{% if not loop.last %}, {% endif %}{% endfor %}">{% for day in statistics.dailyActivity %}<div class="statistics-bar"><span style="--bar-height: {{ (day.count * 100 / statistics.activityMaximum)|round }}%" aria-hidden="true"></span><b>{{ day.count }}</b><small>{{ day.label }}</small></div>{% endfor %}</div></article>
+            <article class="statistics-panel"><header><h2>Bibliothèque</h2><p>Répartition par statut</p></header><ul class="statistics-statuses">{% for status in statistics.statuses %}<li><span>{{ status.label }}</span><b>{{ status.count }}</b></li>{% endfor %}</ul></article>
+            <article class="statistics-panel statistics-top-series"><header><h2>Les plus avancées</h2><p>À reprendre ou finir</p></header>{% if statistics.topSeries %}<ol>{% for series in statistics.topSeries %}<li><strong>{{ series.title }}</strong><span>{{ series.watched }}/{{ series.total }} · {{ series.percent }} %</span></li>{% endfor %}</ol>{% else %}<p class="statistics-muted">Aucun épisode diffusé à comparer.</p>{% endif %}</article>
+            <article class="statistics-panel statistics-tags"><header><h2>Vos repères</h2><p>Genres et réseaux les plus présents</p></header><div>{% for tag in statistics.topGenres %}<span>{{ tag.name }} <b>{{ tag.count }}</b></span>{% endfor %}{% for tag in statistics.topNetworks %}<span>{{ tag.name }} <b>{{ tag.count }}</b></span>{% endfor %}{% if not statistics.topGenres and not statistics.topNetworks %}<p class="statistics-muted">Aucun tag disponible pour le moment.</p>{% endif %}</div></article>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

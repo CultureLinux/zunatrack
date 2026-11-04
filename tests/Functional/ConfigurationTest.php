@@ -59,7 +59,7 @@ final class ConfigurationTest extends WebTestCase
         $client = static::getClient();
         $client->loginUser($admin);
         $crawler = $client->request('GET', '/admin/configuration');
-        $form = $crawler->selectButton('Enregistrer les inscriptions')->form(['account_limit' => '1']);
+        $form = $crawler->filter('form[action="/admin/configuration/inscriptions"]')->selectButton('Enregistrer')->form(['account_limit' => '1']);
         $form['public_registration']->untick();
         $client->submit($form);
         self::assertResponseRedirects('/admin/configuration');
