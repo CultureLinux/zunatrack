@@ -23,15 +23,25 @@ class AccountAccessTest extends WebTestCase
         $this->entityManager->getConnection()->executeStatement('DELETE FROM user');
     }
 
-    public function testAnonymousVisitorsCanReachAccountPagesAndNotTheLibrary(): void
+    public function testAnonymousVisitorsSeeThePublicHomepageAndCannotReachTheLibrary(): void
     {
         $this->client->request('GET', '/');
-        self::assertResponseRedirects('/connexion');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.landing-page');
+        self::assertSelectorTextContains('h1', 'Vos séries,');
+        self::assertSelectorTextContains('h1', 'au bon moment.');
+        self::assertSelectorExists('img[src="/images/zunatrack-banner-v2.png"]');
+        self::assertSelectorExists('a[href="/inscription"]');
+        self::assertSelectorExists('.landing-nav__actions');
+        self::assertSelectorExists('link[rel="icon"]');
 
         foreach (['/connexion', '/inscription', '/mot-de-passe-oublie'] as $path) {
             $this->client->request('GET', $path);
             self::assertResponseIsSuccessful();
         }
+
+        $this->client->request('GET', '/bibliotheque');
+        self::assertResponseRedirects('/connexion');
     }
 
     public function testRegistrationLoginAndPasswordReset(): void

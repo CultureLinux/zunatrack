@@ -19,6 +19,8 @@ class Series
     /** @var list<array{name:string,character:?string,imageUrl:?string}> */ #[ORM\Column(type: 'json')] private array $cast = [];
     #[ORM\Column(nullable: true)] private ?\DateTimeImmutable $premieredAt = null;
     #[ORM\Column(nullable: true)] private ?\DateTimeImmutable $endedAt = null;
+    #[ORM\Column(nullable: true)] private ?float $popularity = null;
+    #[ORM\Column(nullable: true)] private ?float $rating = null;
     #[ORM\Column] private \DateTimeImmutable $updatedAt;
     /** @var Collection<int, Season> */ #[ORM\OneToMany(targetEntity: Season::class, mappedBy: 'series', cascade: ['persist'], orphanRemoval: true)] #[ORM\OrderBy(['number' => 'ASC'])] private Collection $seasons;
 
@@ -41,6 +43,10 @@ class Series
     public function getEndedAt(): ?\DateTimeImmutable { return $this->endedAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
     public function setEndedAt(?\DateTimeImmutable $value): static { $this->endedAt = $value; return $this; }
+    public function getPopularity(): ?float { return $this->popularity; }
+    public function setPopularity(?float $value): static { $this->popularity = $value; return $this; }
+    public function getRating(): ?float { return $this->rating; }
+    public function setRating(?float $value): static { $this->rating = $value; return $this; }
     public function touch(): void { $this->updatedAt = new \DateTimeImmutable(); }
     /** @return Collection<int, Season> */ public function getSeasons(): Collection { return $this->seasons; }
     public function addSeason(Season $season): void { if (!$this->seasons->contains($season)) { $this->seasons->add($season); $season->setSeries($this); } }

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
     <title>{% block title %}ZunaTrack{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/zunatrack-mark.svg') }}">
     <script>try{const t=localStorage.getItem('zunatrack-theme');if(t&&t!=='system')document.documentElement.dataset.theme=t}catch(e){}</script>
     {{ importmap('app') }}
 </head>
@@ -11,7 +12,7 @@
     {% set r = app.request.attributes.get('_route')|default('') %}{% set calendarCount = calendar_upcoming_count() %}
     <nav class="site-nav" aria-label="Navigation principale">
         <div class="site-header">
-            <a class="site-brand" href="{{ path('app_home') }}">ZunaTrack</a>
+            <a class="site-brand" href="{{ path('app_home') }}"><img src="{{ asset('images/zunatrack-mark.svg') }}" alt="" width="28" height="28">ZunaTrack</a>
             <div class="site-links">
                 <a class="{{ r == 'app_home' ? 'is-active' }}" href="{{ path('app_home') }}">Accueil</a>
                 <a class="{{ r in ['app_catalog','app_catalog_import','app_series_show'] ? 'is-active' }}" href="{{ path('app_catalog') }}">Explorer</a>

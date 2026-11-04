@@ -33,6 +33,7 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/inscription, roles: PUBLIC_ACCESS }
         - { path: ^/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/mot-de-passe-oublie, roles: PUBLIC_ACCESS }

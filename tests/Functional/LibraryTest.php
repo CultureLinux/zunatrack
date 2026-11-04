@@ -181,6 +181,24 @@ class LibraryTest extends WebTestCase
         self::assertSelectorNotExists('.episode-card img[src="/media/posters/future-episode.jpg"]');
     }
 
+    public function testCalendarShowsTheSeasonCoverBetweenTheAiringDetailsAndEpisodeInformation(): void
+    {
+        $user = $this->user('calendar@example.test');
+        $series = (new Series())->setTitle('Calendar show');
+        $season = new Season(2); $season->setCoverUrl('/media/posters/calendar-season.jpg');
+        $episode = new Episode(3); $episode->setTitle('Calendar episode'); $episode->setAirDate(new \DateTimeImmutable('2099-01-15')); $episode->setAiredAt(new \DateTimeImmutable('2099-01-15 20:00:00+00:00'));
+        $season->addEpisode($episode); $series->addSeason($season);
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $this->em->persist(new LibraryEntry($user, $series)); $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/calendrier');
+
+        self::assertSelectorExists('.calendar-card');
+        self::assertSelectorExists('.calendar-card__cover img[src="/media/posters/calendar-season.jpg"]');
+        self::assertSelectorTextContains('.calendar-card__body', 'Calendar episode');
+    }
+
     public function testWatchingTheFirstEpisodeMovesAWatchlistEntryToWatching(): void
     {
         $user = $this->user('first-episode@example.test');

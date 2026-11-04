@@ -11,10 +11,10 @@ class TvMazeCatalogProviderTest extends TestCase
 {
     public function testItNormalizesSearchResults(): void
     {
-        $client = new MockHttpClient(new MockResponse(json_encode([['show' => ['id' => 42, 'name' => 'Exemple', 'summary' => '<p>Résumé</p>', 'image' => ['medium' => 'https://image.test/show.jpg'], 'premiered' => '2024-01-01']]], JSON_THROW_ON_ERROR)));
+        $client = new MockHttpClient(new MockResponse(json_encode([['show' => ['id' => 42, 'name' => 'Exemple', 'summary' => '<p>Résumé</p>', 'image' => ['medium' => 'https://image.test/show.jpg'], 'premiered' => '2024-01-01', 'weight' => 87, 'rating' => ['average' => 8.4]]]], JSON_THROW_ON_ERROR)));
         $results = (new TvMazeCatalogProvider($client))->search('Exemple');
 
-        self::assertSame([['id' => '42', 'title' => 'Exemple', 'summary' => 'Résumé', 'posterUrl' => 'https://image.test/show.jpg', 'premiered' => '2024-01-01']], $results);
+        self::assertSame([['id' => '42', 'title' => 'Exemple', 'summary' => 'Résumé', 'posterUrl' => 'https://image.test/show.jpg', 'premiered' => '2024-01-01', 'weight' => 87.0, 'rating' => 8.4]], $results);
     }
 
     public function testItFetchesTheCastEmbed(): void
