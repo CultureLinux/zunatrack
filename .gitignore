@@ -1,6 +1,7 @@
 .agents
 .superpowers
 docs
+design-system
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php

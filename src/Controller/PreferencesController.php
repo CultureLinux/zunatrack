@@ -36,6 +36,6 @@ final class PreferencesController extends AbstractController
             return $this->redirectToRoute('app_preferences');
         }
         $key = $configuration->publicVapidKey();
-        return $this->render('preferences/index.html.twig', ['user'=>$user, 'pushPublicKey'=>$key, 'pushDevices'=>$key === '' ? [] : $em->getRepository(PushSubscription::class)->findBy(['user'=>$user], ['activatedAt'=>'DESC'])]);
+        return $this->render('preferences/index.html.twig', ['user'=>$user, 'pushPublicKey'=>$key, 'pushDevices'=>$key === '' ? [] : $em->getRepository(PushSubscription::class)->findBy(['user'=>$user], ['activatedAt'=>'DESC']), 'importBatches'=>$em->getRepository(\App\Entity\ImportBatch::class)->findBy(['user'=>$user], ['createdAt'=>'DESC'], 3)]);
     }
 }
