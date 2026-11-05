@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['dialog', 'form', 'file', 'status', 'items'];
+    static targets = ['dialog', 'form', 'file', 'status', 'items', 'remainder'];
     static values = { uploadUrl: String, replayToken: String };
     open() { this.dialogTarget.showModal(); }
     backdrop(event) { if (event.target === this.dialogTarget) this.dialogTarget.close(); }
@@ -14,7 +14,8 @@ export default class extends Controller {
     async poll() {
         const response = await fetch(this.statusUrl, { headers: { Accept: 'application/json' } }); if (!response.ok) { this.statusTarget.textContent = 'Impossible de suivre cet import.'; return; }
         const data = await response.json(); this.statusTarget.textContent = `${data.processed}/${data.total} séries traitées — ${data.imported} importées, ${data.merged} fusionnées, ${data.unresolved} à valider.`;
-        this.itemsTarget.replaceChildren(...data.items.map((item) => { const row=document.createElement('li'); if(item.coverUrl){const image=document.createElement('img');image.src=item.coverUrl;image.alt='';row.append(image);} const text=document.createElement('span');text.textContent=`${item.title} · ${item.state}${item.reason ? ` — ${item.reason}` : ''}`;row.append(text);if(item.candidates.length){const select=document.createElement('select');item.candidates.forEach(candidate=>{const option=document.createElement('option');option.value=candidate.id;option.textContent=candidate.title;select.append(option)});const button=document.createElement('button');button.type='button';button.textContent='Utiliser';button.onclick=async()=>{await fetch(item.replayUrl,{method:'POST',headers:{Accept:'application/json'},body:new URLSearchParams({_token:this.replayTokenValue,candidate:select.value})});this.poll()};row.append(select,button);}return row;}));
+        this.remainderTarget.hidden = !data.remainderUrl; if (data.remainderUrl) this.remainderTarget.href = data.remainderUrl;
+        this.itemsTarget.replaceChildren(...data.items.map((item) => { const row=document.createElement('li'); if(item.coverUrl){const image=document.createElement('img');image.src=item.coverUrl;image.alt='';row.append(image);} const text=document.createElement('span');text.textContent=`${item.title} · ${item.state}${item.reason ? ` — ${item.reason}` : ''}`;row.append(text);if(item.candidates.length){const select=document.createElement('select');const preview=document.createElement('img');preview.className='candidate-cover';preview.alt='';const showCandidate=()=>{const candidate=item.candidates.find(candidate=>candidate.id===select.value);preview.src=candidate?.posterUrl || '/images/zunatrack-mark.svg';preview.alt=candidate ? `Affiche de ${candidate.title}` : '';};item.candidates.forEach(candidate=>{const option=document.createElement('option');option.value=candidate.id;option.textContent=candidate.title;select.append(option)});select.addEventListener('change',showCandidate);showCandidate();const button=document.createElement('button');button.type='button';button.textContent='Utiliser';button.onclick=async()=>{await fetch(item.replayUrl,{method:'POST',headers:{Accept:'application/json'},body:new URLSearchParams({_token:this.replayTokenValue,candidate:select.value})});this.poll()};row.append(preview,select,button);}return row;}));
         if (data.state !== 'done') window.setTimeout(() => this.poll(), 1200);
     }
 }

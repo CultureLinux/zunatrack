@@ -28,7 +28,8 @@ final class CsvImportParser
                 $mediaId = trim($row[$columns['media_id']]);
                 if ($source === '' || $mediaId === '') continue;
                 $key = $source.':'.$mediaId;
-                $groups[$key] ??= ['tv' => null, 'seasons' => [], 'episodes' => []];
+                $groups[$key] ??= ['tv' => null, 'seasons' => [], 'episodes' => [], 'rows' => []];
+                $groups[$key]['rows'][] = $row;
                 if ($type === 'tv') $groups[$key]['tv'] = $row;
                 if ($type === 'season' && ctype_digit($row[$columns['season_number']])) $groups[$key]['seasons'][(int) $row[$columns['season_number']]] = true;
                 if ($type === 'episode' && ctype_digit($row[$columns['season_number']]) && ctype_digit($row[$columns['episode_number']])) $groups[$key]['episodes'][(int) $row[$columns['season_number']]][(int) $row[$columns['episode_number']]] = true;
@@ -52,6 +53,7 @@ final class CsvImportParser
                     $this->nullable($tv[$columns['end_date']]),
                     array_map('intval', array_keys($group['seasons'])),
                     $episodes,
+                    $group['rows'],
                 );
             }
 
