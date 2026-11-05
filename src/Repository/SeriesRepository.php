@@ -25,11 +25,18 @@ class SeriesRepository extends ServiceEntityRepository
     }
 
     /** @return list<Series> */
-    public function suggestForUser(?User $user, int $limit = 24): array
+    public function suggestForUser(?User $user, ?int $limit = null): array
     {
-        $qb = $this->createQueryBuilder('series')->orderBy('series.popularity', 'DESC')->addOrderBy('series.rating', 'DESC')->addOrderBy('series.title', 'ASC')->setMaxResults($limit);
+        $qb = $this->createQueryBuilder('series')->orderBy('series.popularity', 'DESC')->addOrderBy('series.rating', 'DESC')->addOrderBy('series.title', 'ASC');
         if ($user) $qb->andWhere('series.id NOT IN (SELECT IDENTITY(entry.series) FROM App\\Entity\\LibraryEntry entry WHERE entry.user = :user)')->setParameter('user', $user);
+        if ($limit !== null) $qb->setMaxResults($limit);
         return $qb->getQuery()->getResult();
+    }
+
+    /** @return list<Series> */
+    public function featuredWithPoster(int $limit = 12): array
+    {
+        return $this->createQueryBuilder('series')->where('series.posterUrl IS NOT NULL')->andWhere("series.posterUrl != ''")->orderBy('series.popularity', 'DESC')->addOrderBy('series.rating', 'DESC')->addOrderBy('series.title', 'ASC')->setMaxResults($limit)->getQuery()->getResult();
     }
 
     private function normalizeActor(string $name): string { return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $name) ?? '')); }

@@ -3,6 +3,7 @@
 namespace App\Tests\Functional;
 
 use App\Entity\User;
+use App\Entity\Series;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -42,6 +43,19 @@ class AccountAccessTest extends WebTestCase
 
         $this->client->request('GET', '/bibliotheque');
         self::assertResponseRedirects('/connexion');
+    }
+
+    public function testAnonymousHomepageShowsLocalSeriesAndOmitsTheClosingDataBlock(): void
+    {
+        foreach (['library_entry', 'catalog_source', 'series'] as $table) $this->entityManager->getConnection()->executeStatement('DELETE FROM '.$table);
+        $this->entityManager->persist((new Series())->setTitle('Public show')->setPosterUrl('/media/posters/public.jpg')->setPopularity(99));
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/');
+
+        self::assertSelectorExists('.landing-series-carousel');
+        self::assertSelectorExists('.landing-series-carousel img[src="/media/posters/public.jpg"]');
+        self::assertSelectorTextNotContains('.landing-page', 'Une application, vos données');
     }
 
     public function testRegistrationLoginAndPasswordReset(): void

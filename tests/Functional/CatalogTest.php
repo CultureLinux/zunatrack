@@ -65,11 +65,32 @@ final class CatalogTest extends WebTestCase
         $client->loginUser($user);
         $client->request('GET', '/catalogue');
 
+        self::assertSelectorExists('.catalog-intro > .page-header + .catalog-search');
         self::assertSelectorTextContains('.catalog-suggestions', 'À découvrir');
         self::assertSelectorNotExists('.catalog-suggestions h2');
         self::assertSelectorExists('.catalog-suggestions img[src="/media/posters/discover.jpg"]');
         self::assertSelectorExists('.catalog-suggestions img[src="/images/zunatrack-mark.svg"]');
         self::assertSelectorTextNotContains('.catalog-suggestions', 'Déjà dans ma bibliothèque');
+    }
+
+    public function testEmptySearchGroupsTwentyFourOrMoreSuggestionsWithoutDuplicatingTitles(): void
+    {
+        $client = static::createClient(); $em = self::getContainer()->get(EntityManagerInterface::class);
+        foreach (['library_entry', 'catalog_source', 'series', 'user'] as $table) $em->getConnection()->executeStatement('DELETE FROM '.$table);
+        $user = (new User())->setEmail('genres@example.test');
+        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'password'));
+        $em->persist($user);
+        foreach (array_merge(array_fill(0, 10, ['Fantasy']), array_fill(0, 5, ['Fantasy', 'Drama']), [['Drama']], array_fill(0, 4, ['Adventure']), array_fill(0, 4, [])) as $index => $genres) $em->persist((new Series())->setTitle('Suggestion '.$index)->setGenres($genres));
+        $em->flush();
+
+        $client->loginUser($user); $client->request('GET', '/catalogue');
+
+        self::assertSelectorCount(3, '.catalog-suggestions');
+        self::assertSelectorCount(24, '.catalog-suggestion');
+        $groups = $client->getCrawler()->filter('.catalog-suggestions');
+        self::assertStringContainsString('Fantasy', $groups->eq(0)->text());
+        self::assertStringContainsString('Adventure', $groups->eq(1)->text());
+        self::assertStringContainsString('Autres à découvrir', $groups->eq(2)->text());
     }
 
     public function testAnonymousVisitorCanOpenAnImportedSeasonWithoutProgressData(): void
