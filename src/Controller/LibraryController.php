@@ -75,12 +75,18 @@ class LibraryController extends AbstractController
     public function progress(int $id, string $type, int $target, Request $request, LibraryEntryRepository $entries, EntityManagerInterface $em, ProgressService $progress): Response
     {
         $entry=$this->entry($id,$entries); if (!$this->isCsrfTokenValid('library_progress_'.$id, (string)$request->request->get('_token'))) throw $this->createAccessDeniedException();
-        $watched=(string)$request->request->get('watched') === '1';
-        try { if($type==='episode') {$episode=$em->find(Episode::class,$target)??throw $this->createNotFoundException();$progress->toggleEpisode($this->user(),$entry,$episode,$watched,(string)$request->request->get('catch_up')==='1');} elseif($type==='season') {$season=$em->find(Season::class,$target)??throw $this->createNotFoundException();$progress->toggleSeason($this->user(),$entry,$season,$watched);} else {$progress->toggleSeries($this->user(),$entry,$watched);} } catch (\LogicException) { throw $this->createAccessDeniedException(); }
+        $watched=(string)$request->request->get('watched') === '1'; $seasonCompleted=false;
+        try { if($type==='episode') {$episode=$em->find(Episode::class,$target)??throw $this->createNotFoundException();$progress->toggleEpisode($this->user(),$entry,$episode,$watched,(string)$request->request->get('catch_up')==='1');$seasonCompleted=$watched&&$progress->seasonProgress($this->user(),$episode->getSeason())['complete'];} elseif($type==='season') {$season=$em->find(Season::class,$target)??throw $this->createNotFoundException();$progress->toggleSeason($this->user(),$entry,$season,$watched);} else {$progress->toggleSeries($this->user(),$entry,$watched);} } catch (\LogicException) { throw $this->createAccessDeniedException(); }
         $progress->synchronizeLibraryStatus($this->user(), $entry);
         $this->addFlash('success',$watched?'Progression mise à jour.':'Épisode(s) remis non vus.');
+        if ($seasonCompleted) {
+            $lastSeason = true;
+            foreach ($entry->getSeries()->getSeasons() as $season) if ($season->getNumber() > $episode->getSeason()->getNumber()) $lastSeason = false;
+            if ($lastSeason) return $this->redirectToRoute('app_series_show', ['id' => $entry->getSeries()->getId(), 'season_completed' => 1]);
+        }
         $referer = (string) $request->headers->get('referer', $this->generateUrl('app_library'));
         $anchor = (string) $request->request->get('return_anchor', '');
+        if ($seasonCompleted) $referer .= (str_contains($referer, '?') ? '&' : '?').'season_completed=1';
         if ($type === 'episode' && preg_match('/^episode-\\d+$/', $anchor)) $referer .= '#'.$anchor;
         return $this->redirect($referer);
     }

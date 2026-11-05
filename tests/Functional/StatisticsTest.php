@@ -48,6 +48,7 @@ final class StatisticsTest extends WebTestCase
         $this->client->request('GET', '/statistiques');
 
         self::assertResponseIsSuccessful();
+        self::assertSelectorExists('[data-controller~="statistics-motion"]');
         self::assertSelectorTextContains('h1', 'Vos statistiques');
         self::assertSelectorTextContains('[data-stat="watched-episodes"]', '1');
         self::assertSelectorTextContains('[data-stat="watch-time"]', '1 j 2 h 2 min');

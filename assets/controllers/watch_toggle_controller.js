@@ -12,6 +12,6 @@ export default class extends Controller {
     cancel() { this.dialogTarget.close(); this.pending = null; }
     rememberPosition = (event) => { this.rememberForm(event.target); }
     rememberForm(form) { const anchor = form.querySelector('[name="return_anchor"]')?.value; if (anchor) sessionStorage.setItem('zunatrack:return-anchor', anchor); }
-    restorePosition() { const anchor = sessionStorage.getItem('zunatrack:return-anchor'); if (!anchor) return; sessionStorage.removeItem('zunatrack:return-anchor'); requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' })); }
+    restorePosition() { const anchor = sessionStorage.getItem('zunatrack:return-anchor'); if (!anchor) return; sessionStorage.removeItem('zunatrack:return-anchor'); if (new URLSearchParams(window.location.search).get('season_completed') === '1') return; requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' })); }
     send(catchUp) { this.pending.querySelector('[name="catch_up"]').value = catchUp ? '1' : '0'; this.rememberForm(this.pending); this.dialogTarget.close(); this.pending.submit(); }
 }

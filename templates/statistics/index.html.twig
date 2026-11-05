@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% block title %}Mes statistiques · ZunaTrack{% endblock %}
 {% block body %}
-<section class="statistics" aria-labelledby="page-title">
+<section class="statistics" aria-labelledby="page-title" data-controller="statistics-motion">
     <header class="page-header"><p class="eyebrow">Votre rythme</p><h1 id="page-title">Vos statistiques</h1><p class="lede">Votre suivi en un coup d’œil, sans transformer votre bibliothèque en tableau de bord compliqué.</p></header>
     {% if statistics.empty %}
         <div class="statistics-empty"><h2>Les statistiques arriveront avec vos premières séries.</h2><p>Ajoutez une série, puis cochez un épisode vu pour commencer à suivre votre rythme.</p><a class="button button--primary" href="{{ path('app_catalog') }}">Ajouter une série</a></div>
