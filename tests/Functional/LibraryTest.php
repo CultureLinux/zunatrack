@@ -89,6 +89,21 @@ class LibraryTest extends WebTestCase
         self::assertNotNull($this->em->getRepository(LibraryEntry::class)->find($entry->getId()));
     }
 
+    public function testStatusUpdateNeverRedirectsToAnExternalReferer(): void
+    {
+        $user = $this->user('return@example.test');
+        $series = (new Series())->setTitle('Safe return');
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $entry = new LibraryEntry($user, $series); $this->em->persist($entry); $this->em->flush();
+
+        $this->client->loginUser($user);
+        $crawler = $this->client->request('GET', '/series/'.$series->getId());
+        $token = $crawler->filter('form.status-actions input[name="_token"]')->first()->attr('value');
+        $this->client->request('POST', '/bibliotheque/'.$entry->getId().'/statut', ['_token' => $token, 'status' => LibraryEntry::STATUS_PAUSED], [], ['HTTP_REFERER' => 'https://attacker.example/landing']);
+
+        self::assertResponseRedirects('/bibliotheque');
+    }
+
     public function testLibraryCanDisplayAndFilterProviderGenreAndNetworkTags(): void
     {
         $user = $this->user('tag-filter@example.test');

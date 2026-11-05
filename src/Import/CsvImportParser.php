@@ -6,6 +6,7 @@ namespace App\Import;
 
 final class CsvImportParser
 {
+    private const MAX_ROWS = 20_000;
     private const YAMTRACK_HEADERS = ['media_id', 'source', 'media_type', 'title', 'image', 'season_number', 'episode_number', 'score', 'status', 'notes', 'start_date', 'end_date', 'progress', 'created_at', 'progressed_at'];
     private const ZUNATRACK_HEADERS = ['zunatrack_version', 'provider', 'external_id', 'media_type', 'title', 'status', 'notes', 'start_date', 'end_date', 'season_number', 'episode_number', 'watched_at'];
 
@@ -20,7 +21,7 @@ final class CsvImportParser
             if ($headers === false || $headers !== self::YAMTRACK_HEADERS) throw new \InvalidArgumentException('Ce fichier CSV ne correspond pas à un export Yamtrack ou ZunaTrack pris en charge.');
             $columns = array_flip($headers);
             $groups = [];
-            while (($row = fgetcsv($file, 0, ',', '"', '')) !== false) {
+            $rows=0; while (($row = fgetcsv($file, 0, ',', '"', '')) !== false) { if (++$rows > self::MAX_ROWS) throw new \InvalidArgumentException('Le fichier contient trop de lignes.');
                 if (count($row) !== count($headers)) continue;
                 $type = $row[$columns['media_type']];
                 if (!in_array($type, ['tv', 'season', 'episode'], true)) continue;
@@ -73,7 +74,7 @@ final class CsvImportParser
     private function parseZunaTrack($file, array $headers): ParsedImport
     {
         $columns=array_flip($headers); $groups=[];
-        while (($row=fgetcsv($file,0,',','"','')) !== false) {
+        $rows=0; while (($row=fgetcsv($file,0,',','"','')) !== false) { if (++$rows > self::MAX_ROWS) throw new \InvalidArgumentException('Le fichier contient trop de lignes.');
             if(count($row)!==count($headers) || $row[$columns['zunatrack_version']] !== 'zunatrack-v1') continue;
             $provider=trim($row[$columns['provider']]); $id=trim($row[$columns['external_id']]); if($provider===''||$id==='')continue;
             $key=$provider.':'.$id; $groups[$key] ??= ['tv'=>null,'episodes'=>[]];

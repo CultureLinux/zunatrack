@@ -1,0 +1,45 @@
+<p align="center">
+  <img src="public/images/zunatrack-banner-v2.png" alt="ZunaTrack — suivi de séries TV" width="768">
+</p>
+
+# ZunaTrack
+
+Application Symfony auto-hébergée de suivi de séries TV, alimentée par TVmaze.
+
+## Prérequis
+
+PHP 8.5 avec Sodium, MariaDB 10.11+, Composer, Node.js et nginx. Configurez `DATABASE_URL`, un `APP_SECRET` aléatoire d’au moins 32 caractères, `DEFAULT_URI`, `MAILER_DSN` et `MESSENGER_TRANSPORT_DSN` dans `.env.local` ou les variables du serveur.
+
+## Installation et mise à jour
+
+```bash
+php85 /usr/bin/composer install --no-dev --optimize-autoloader
+php85 bin/console doctrine:migrations:migrate --no-interaction --env=prod
+php85 bin/console asset-map:compile --env=prod
+php85 bin/console cache:clear --env=prod
+```
+
+Après chaque mise à jour : sauvegardez la base, déployez le code, lancez les migrations puis recompilez les assets.
+
+## Tâches de fond
+
+Exécutez un worker permanent : `php85 bin/console messenger:consume async --time-limit=3600 --memory-limit=128M --env=prod`.
+
+Planifiez chaque minute `php85 bin/console app:notify-aired-episodes --env=prod`. Les imports et les notifications Push dépendent de ce worker.
+
+## Sauvegarde et restauration
+
+Sauvegardez MariaDB et `public/media/posters/`; les clés VAPID sont chiffrées dans la base et nécessitent le même `APP_SECRET` pour être restaurées. Testez une restauration sur une instance isolée avant toute mise à jour majeure.
+
+## Nginx et sécurité
+
+Servez exclusivement `public/`, forcez HTTPS et ajoutez au minimum `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` et une CSP adaptée aux assets locaux. Ne versionnez jamais `.env.local`, les clés VAPID ou les sauvegardes.
+
+## Vérification
+
+```bash
+php85 bin/phpunit
+php85 bin/console lint:yaml config
+php85 bin/console lint:twig templates
+php85 /usr/bin/composer audit --locked
+```
