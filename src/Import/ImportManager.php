@@ -23,7 +23,12 @@ final readonly class ImportManager
         $keys = array_map(fn(ImportPayload $payload): string => $payload->externalKey, $parsed->items);
         $completed = $keys === [] ? [] : $this->em->createQuery('SELECT DISTINCT i.externalKey FROM App\\Entity\\ImportItem i JOIN i.batch b WHERE b.user = :user AND i.externalKey IN (:keys) AND i.state IN (:states)')
             ->setParameter('user', $user)->setParameter('keys', $keys)->setParameter('states', [ImportItem::STATE_IMPORTED, ImportItem::STATE_MERGED])->getSingleColumnResult();
-        foreach ($parsed->items as $payload) if (!in_array($payload->externalKey, $completed, true)) $this->em->persist(new ImportItem($batch, $payload->externalKey, $payload->title, $payload->toArray()));
+        foreach ($parsed->items as $payload) {
+            $item = new ImportItem($batch, $payload->externalKey, $payload->title, $payload->toArray());
+            if (in_array($payload->externalKey, $completed, true)) $item->complete(ImportItem::STATE_MERGED, null);
+            $this->em->persist($item);
+        }
+        foreach ($batch->getItems() as $item) if ($item->getState() === ImportItem::STATE_MERGED) $batch->record(ImportItem::STATE_MERGED);
         $batch->finishWhenEmpty();
         $this->em->persist($batch);
         $this->em->flush();
