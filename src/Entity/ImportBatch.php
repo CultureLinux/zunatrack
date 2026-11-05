@@ -44,4 +44,5 @@ class ImportBatch
     public function addItem(ImportItem $item): void { if (!$this->items->contains($item)) { $this->items->add($item); ++$this->total; } }
     public function record(string $state): void { ++$this->processed; if ($state === ImportItem::STATE_IMPORTED) ++$this->imported; if ($state === ImportItem::STATE_MERGED) ++$this->merged; if ($state === ImportItem::STATE_UNRESOLVED) ++$this->unresolved; $this->state = $this->processed >= $this->total ? self::STATE_DONE : self::STATE_RUNNING; }
     public function reopenUnresolved(): void { if($this->unresolved > 0)--$this->unresolved; if($this->processed > 0)--$this->processed; $this->state=self::STATE_RUNNING; }
+    public function finishWhenEmpty(): void { if ($this->total === 0) $this->state = self::STATE_DONE; }
 }

@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\ImportBatch;
 use App\Entity\User;
 use App\Import\ImportManager;
+use App\Import\YamtrackRemainderExporter;
 use App\Message\ProcessImportItem;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,7 +35,17 @@ final class ImportController extends AbstractController
     public function status(ImportBatch $batch): JsonResponse
     {
         $this->owner($batch);
-        return $this->json(['state'=>$batch->getState(),'total'=>$batch->getTotal(),'processed'=>$batch->getProcessed(),'imported'=>$batch->getImported(),'merged'=>$batch->getMerged(),'unresolved'=>$batch->getUnresolved(),'items'=>array_map(fn($item)=>['id'=>$item->getId(),'title'=>$item->getTitle(),'state'=>$item->getState(),'reason'=>$item->getReason(),'coverUrl'=>$item->getCoverUrl(),'candidates'=>$item->getCandidates(),'replayUrl'=>$this->generateUrl('app_import_replay',['batch'=>$batch->getId(),'item'=>$item->getId()])],$batch->getItems()->toArray())]);
+        $remaining = array_filter($batch->getItems()->toArray(), fn($item): bool => !in_array($item->getState(), [\App\Entity\ImportItem::STATE_IMPORTED, \App\Entity\ImportItem::STATE_MERGED], true));
+        return $this->json(['state'=>$batch->getState(),'total'=>$batch->getTotal(),'processed'=>$batch->getProcessed(),'imported'=>$batch->getImported(),'merged'=>$batch->getMerged(),'unresolved'=>$batch->getUnresolved(),'remainderUrl'=>$batch->getFormat() === 'yamtrack' && $remaining !== [] ? $this->generateUrl('app_import_yamtrack_remainder',['id'=>$batch->getId()]) : null,'items'=>array_map(fn($item)=>['id'=>$item->getId(),'title'=>$item->getTitle(),'state'=>$item->getState(),'reason'=>$item->getReason(),'coverUrl'=>$item->getCoverUrl(),'candidates'=>$item->getCandidates(),'replayUrl'=>$this->generateUrl('app_import_replay',['batch'=>$batch->getId(),'item'=>$item->getId()])],$batch->getItems()->toArray())]);
+    }
+
+    #[Route('/{id}/reste-yamtrack', name: 'app_import_yamtrack_remainder', methods: ['GET'])]
+    public function remainder(ImportBatch $batch, YamtrackRemainderExporter $exporter): Response
+    {
+        $this->owner($batch);
+        if ($batch->getFormat() !== 'yamtrack') throw $this->createNotFoundException();
+
+        return $exporter->stream($batch);
     }
 
     #[Route('/{batch}/items/{item}/rejouer', name: 'app_import_replay', methods: ['POST'])]

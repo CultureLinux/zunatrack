@@ -1,6 +1,6 @@
 framework:
     rate_limiter:
         tvmaze_api:
-            policy: fixed_window
-            limit: 18
-            interval: '10 seconds'
+            policy: sliding_window
+            limit: 30
+            interval: '1 second'
