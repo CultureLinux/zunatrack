@@ -9,6 +9,9 @@ use App\Entity\ImportBatch;
 use App\Entity\ImportItem;
 use App\Import\ImportPayload;
 use App\Import\ImportManager;
+use App\Entity\CatalogSource;
+use App\Entity\LibraryEntry;
+use App\Entity\Series;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -63,7 +66,7 @@ final class ImportTest extends WebTestCase
         self::assertSame('text/csv; charset=utf-8', $client->getResponse()->headers->get('Content-Type'));
     }
 
-    public function testReuploadSkipsSeriesAlreadyImportedForTheSameOwner(): void
+    public function testReuploadShowsSeriesAlreadyImportedForTheSameOwnerAsMerged(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);
         foreach (['import_item', 'import_batch', 'user'] as $table) $em->getConnection()->executeStatement('DELETE FROM '.$table);
@@ -74,8 +77,25 @@ final class ImportTest extends WebTestCase
 
         try {
             $batch=self::getContainer()->get(ImportManager::class)->create($user, new UploadedFile($path, 'yamtrack.csv', 'text/csv', null, true));
-            self::assertSame(0, $batch->getTotal());
+            self::assertSame(1, $batch->getTotal());
             self::assertSame(ImportBatch::STATE_DONE, $batch->getState());
+            self::assertSame(1, $batch->getMerged());
+            self::assertSame(ImportItem::STATE_MERGED, $batch->getItems()->first()->getState());
         } finally { unlink($path); }
+    }
+
+    public function testOwnerCanExportALibraryEntryWithItsCatalogProvider(): void
+    {
+        $client = static::createClient(); $em = self::getContainer()->get(EntityManagerInterface::class);
+        foreach (['library_entry', 'catalog_source', 'series', 'user'] as $table) $em->getConnection()->executeStatement('DELETE FROM '.$table);
+        $user=(new User())->setEmail('export@example.test');$user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user,'password'));
+        $series=(new Series())->setTitle('Export Show'); $source=new CatalogSource('tvmaze', '42', $series); $entry=new LibraryEntry($user, $series);
+        $em->persist($user);$em->persist($series);$em->persist($source);$em->persist($entry);$em->flush();
+
+        $client->loginUser($user); $client->request('GET', '/exports/zunatrack');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('text/csv; charset=utf-8', $client->getResponse()->headers->get('Content-Type'));
+        self::assertMatchesRegularExpression('/filename="zunatrack-export-\d{8}-\d{6}\.csv"/', (string) $client->getResponse()->headers->get('Content-Disposition'));
     }
 }
