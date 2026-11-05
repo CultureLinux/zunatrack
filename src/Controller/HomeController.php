@@ -6,6 +6,7 @@ use App\Entity\LibraryEntry;
 use App\Entity\User;
 use App\Catalog\CatalogService;
 use App\Repository\LibraryEntryRepository;
+use App\Repository\SeriesRepository;
 use App\Watching\ProgressService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,11 +15,11 @@ use Symfony\Component\Routing\Attribute\Route;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function __invoke(LibraryEntryRepository $entries, ProgressService $progress, CatalogService $catalog): Response
+    public function __invoke(LibraryEntryRepository $entries, ProgressService $progress, CatalogService $catalog, SeriesRepository $series): Response
     {
         $user = $this->getUser();
         if (!$user instanceof User) {
-            return $this->render('home/index.html.twig');
+            return $this->render('home/index.html.twig', ['featuredSeries' => $series->featuredWithPoster()]);
         }
 
         $available = [];
