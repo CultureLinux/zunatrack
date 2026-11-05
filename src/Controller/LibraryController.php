@@ -42,6 +42,18 @@ class LibraryController extends AbstractController
         return $this->redirectToRoute('app_series_show', ['id' => $id]);
     }
 
+    #[Route('/bibliotheque/{id}/reprendre', name: 'app_library_resume', methods: ['GET'])]
+    public function resume(int $id, LibraryEntryRepository $entries, ProgressService $progress): Response
+    {
+        $entry = $this->entry($id, $entries);
+        $target = $progress->resumeTarget($this->user(), $entry->getSeries());
+        if ($target === null) return $this->redirectToRoute('app_series_show', ['id' => $entry->getSeries()->getId()]);
+
+        $url = $this->generateUrl('app_series_show', ['id' => $entry->getSeries()->getId(), 'saison' => $target['season']->getNumber()]);
+        if ($target['episode'] !== null) $url .= '#episode-'.$target['episode']->getId();
+        return $this->redirect($url);
+    }
+
     #[Route('/bibliotheque/{id}/modifier', name: 'app_library_update', methods: ['POST'])]
     public function update(int $id, Request $request, LibraryEntryRepository $entries, EntityManagerInterface $em): Response
     {
