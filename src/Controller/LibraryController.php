@@ -71,7 +71,7 @@ class LibraryController extends AbstractController
         if (!$this->isCsrfTokenValid('library_status_'.$id, (string) $request->request->get('_token'))) throw $this->createAccessDeniedException();
         try { $entry->setStatus((string) $request->request->get('status')); } catch (\InvalidArgumentException) { throw $this->createNotFoundException(); }
         $em->flush(); $this->addFlash('success', 'Statut mis à jour.');
-        return $this->redirect((string) $request->headers->get('referer', $this->generateUrl('app_library')));
+        return $this->redirect($this->returnUrl($request));
     }
 
     #[Route('/bibliotheque/{id}/retirer', name: 'app_library_remove', methods: ['POST'])]
@@ -96,7 +96,7 @@ class LibraryController extends AbstractController
             foreach ($entry->getSeries()->getSeasons() as $season) if ($season->getNumber() > $episode->getSeason()->getNumber()) $lastSeason = false;
             if ($lastSeason) return $this->redirectToRoute('app_series_show', ['id' => $entry->getSeries()->getId(), 'season_completed' => 1]);
         }
-        $referer = (string) $request->headers->get('referer', $this->generateUrl('app_library'));
+        $referer = $this->returnUrl($request);
         $anchor = (string) $request->request->get('return_anchor', '');
         if ($seasonCompleted) $referer .= (str_contains($referer, '?') ? '&' : '?').'season_completed=1';
         if ($type === 'episode' && preg_match('/^episode-\\d+$/', $anchor)) $referer .= '#'.$anchor;
@@ -104,6 +104,7 @@ class LibraryController extends AbstractController
     }
 
     private function user(): User { $user = $this->getUser(); if (!$user instanceof User) { throw $this->createAccessDeniedException(); } return $user; }
+    private function returnUrl(Request $request): string { $url=(string)$request->headers->get('referer', ''); if (str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url; $parts=parse_url($url); if (is_array($parts) && ($parts['host'] ?? null) === $request->getHost() && in_array($parts['scheme'] ?? null, ['http','https'], true)) return ($parts['path'] ?? '/').(isset($parts['query']) ? '?'.$parts['query'] : '').(isset($parts['fragment']) ? '#'.$parts['fragment'] : ''); return $this->generateUrl('app_library'); }
     private function entry(int $id, LibraryEntryRepository $entries): LibraryEntry { $entry = $entries->find($id) ?? throw $this->createNotFoundException(); if ($entry->getUser()->getId() !== $this->user()->getId()) { throw $this->createAccessDeniedException(); } return $entry; }
     private function date(mixed $value): ?\DateTimeImmutable { if (!is_string($value) || $value === '') { return null; } $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value); if (!$date || $date->format('Y-m-d') !== $value) { throw new \InvalidArgumentException(); } return $date; }
 }

@@ -26,8 +26,8 @@ class CatalogController extends AbstractController
         $suggestionGroups = $this->suggestionGroups($suggestions);
         return $this->render('catalog/index.html.twig', compact('query', 'actor', 'results', 'suggestionGroups'));
     }
-    #[Route('/catalogue/tvmaze/{id}', name: 'app_catalog_import', requirements: ['id'=>'\d+'])]
-    public function import(string $id, CatalogService $catalog): Response { $series=$catalog->import($id); return $this->redirectToRoute('app_series_show',['id'=>$series->getId()]); }
+    #[Route('/catalogue/tvmaze/{id}', name: 'app_catalog_import', methods: ['POST'], requirements: ['id'=>'\d+'])]
+    public function import(string $id, Request $request, CatalogService $catalog): Response { $this->denyAccessUnlessGranted('ROLE_USER'); if (!$this->isCsrfTokenValid('catalog_import_'.$id, $request->request->getString('_token'))) throw $this->createAccessDeniedException(); $series=$catalog->import($id); return $this->redirectToRoute('app_series_show',['id'=>$series->getId()]); }
 
     #[Route('/series/{id}', name: 'app_series_show')]
     public function show(int $id, Request $request, SeriesRepository $series, LibraryEntryRepository $entries, CatalogSourceRepository $sources, CatalogService $catalog, ProgressService $progress): Response

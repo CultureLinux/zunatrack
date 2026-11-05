@@ -20,15 +20,26 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class CatalogTest extends WebTestCase
 {
+    public function testCatalogImportIsNotAvailableViaGet(): void
+    {
+        $client = static::createClient();
+        $user = (new User())->setEmail('import-method@example.test');
+        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'password'));
+        self::getContainer()->get(EntityManagerInterface::class)->persist($user); self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $client->loginUser($user);
+        $client->request('GET', '/catalogue/tvmaze/1');
+        self::assertResponseStatusCodeSame(405);
+    }
+
     public function testSearchStoresALightweightLocalSeriesWithoutSeasonsOrEpisodes(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);
         foreach (['library_entry', 'catalog_source', 'series', 'user'] as $table) $em->getConnection()->executeStatement('DELETE FROM '.$table);
         $provider = new TvMazeCatalogProvider(new MockHttpClient([
             new MockResponse(json_encode([['show' => ['id' => 420, 'name' => 'Stored show', 'summary' => '<p>Stored summary</p>', 'premiered' => '2024-01-01', 'weight' => 90, 'rating' => ['average' => 8.8]]]], JSON_THROW_ON_ERROR)),
-            new MockResponse(json_encode(['id' => 420, 'name' => 'Stored show', 'image' => ['medium' => 'https://image.test/show.jpg'], '_embedded' => ['cast' => [], 'seasons' => [['number' => 1, 'name' => 'Season one', 'image' => null]], 'episodes' => []]], JSON_THROW_ON_ERROR)),
+            new MockResponse(json_encode(['id' => 420, 'name' => 'Stored show', 'image' => ['medium' => 'https://static.tvmaze.com/show.jpg'], '_embedded' => ['cast' => [], 'seasons' => [['number' => 1, 'name' => 'Season one', 'image' => null]], 'episodes' => []]], JSON_THROW_ON_ERROR)),
         ]));
-        $posters = new PosterCache(new MockHttpClient(new MockResponse('image')), dirname(__DIR__, 2), self::getContainer()->get(CatalogMetrics::class));
+        $posters = new PosterCache(new MockHttpClient(new MockResponse('image', ['response_headers' => ['content-type: image/jpeg']])), sys_get_temp_dir().'/zunatrack-catalog-test-'.uniqid(), self::getContainer()->get(CatalogMetrics::class));
         $service = new CatalogService($provider, self::getContainer()->get('cache.app'), self::getContainer()->get(\App\Repository\CatalogSourceRepository::class), $em, self::getContainer()->get('limiter.tvmaze_api'), $posters, self::getContainer()->get(CatalogMetrics::class));
 
         $service->search('stored-'.uniqid('', true));
@@ -45,7 +56,7 @@ final class CatalogTest extends WebTestCase
         $service->enrichFromSnapshot($source->getSeries());
         self::assertSame('Stored show', $source->getSeries()->getTitle());
         self::assertCount(1, $source->getSeries()->getSeasons());
-        self::assertSame('/media/posters/'.hash('sha256', 'https://image.test/show.jpg').'.jpg', $source->getSeries()->getSeasons()->first()->getCoverUrl());
+        self::assertSame('/media/posters/'.hash('sha256', 'https://static.tvmaze.com/show.jpg').'.jpg', $source->getSeries()->getSeasons()->first()->getCoverUrl());
     }
 
     public function testEmptySearchSuggestsLocalSeriesOutsideTheUsersLibrary(): void
