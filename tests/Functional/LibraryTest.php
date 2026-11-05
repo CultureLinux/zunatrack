@@ -145,15 +145,22 @@ class LibraryTest extends WebTestCase
         $user=$this->user('progress@example.test'); $series=(new Series())->setTitle('Progress show'); $season=new Season(1);
         foreach ([1,2,3] as $number) { $episode=new Episode($number); $episode->setTitle('Episode '.$number); $episode->setAirDate(new \DateTimeImmutable('2026-01-01')); if ($number === 1) $episode->setCoverUrl('/media/posters/episode-1.jpg'); $season->addEpisode($episode); }
         $series->addSeason($season); $this->em->persist($user); $this->em->persist($series); $this->em->flush(); $entry=new LibraryEntry($user,$series); $this->em->persist($entry); $this->em->flush();
-        $this->client->loginUser($user); $this->client->request('GET','/'); self::assertSelectorTextContains('.available-episodes', 'S01E01'); self::assertSelectorExists('.available-episodes img[src="/media/posters/episode-1.jpg"]'); $crawler=$this->client->request('GET','/series/'.$series->getId().'?saison=1'); $token=$crawler->filter('form.episode-toggle input[name="_token"]')->last()->attr('value'); $third=$season->getEpisodes()->last();
-        $this->client->request('POST','/bibliotheque/'.$entry->getId().'/suivi/episode/'.$third->getId(),['_token'=>$token,'watched'=>'1','catch_up'=>'1']); self::assertResponseRedirects();
+        $this->client->loginUser($user); $this->client->request('GET','/'); self::assertSelectorTextContains('.available-episodes', 'S01E01'); self::assertSelectorExists('.available-episodes img[src="/media/posters/episode-1.jpg"]'); $crawler=$this->client->request('GET','/series/'.$series->getId().'?saison=1'); $token=$crawler->filter('form.episode-toggle input[name="_token"]')->last()->attr('value'); $first=$season->getEpisodes()->first(); $third=$season->getEpisodes()->last();
+        self::assertSelectorExists('#episode-'.$first->getId().'[data-next-unwatched]');
+        self::assertSelectorNotExists('#episode-'.$third->getId().'[data-next-unwatched]');
+        $returnUrl='/series/'.$series->getId().'?saison=1';
+        $this->client->request('POST','/bibliotheque/'.$entry->getId().'/suivi/episode/'.$third->getId(),['_token'=>$token,'watched'=>'1','catch_up'=>'1','return_anchor'=>'episode-'.$third->getId()],[],['HTTP_REFERER'=>$returnUrl]); self::assertResponseRedirects('/series/'.$series->getId().'?season_completed=1');
         self::assertSame(3, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM episode_progress'));
         $this->em->clear();
         $entry = $this->em->getRepository(LibraryEntry::class)->find($entry->getId());
         self::assertSame(LibraryEntry::STATUS_COMPLETED, $entry->getStatus());
         $crawler=$this->client->request('GET','/series/'.$series->getId().'?saison=1');
         self::assertCount(0, $crawler->filter('#episode-'.$third->getId().' form[data-watch-toggle-catch-up]'));
-        $returnUrl='/series/'.$series->getId().'?saison=1';
+        self::assertSelectorTextContains('h1 .season-completion', 'Saison entièrement vue');
+        self::assertSelectorExists('#episode-'.$third->getId().'.is-watched button[aria-pressed="true"] svg path[d="M5 12l4 4L19 6"]');
+        self::assertSelectorExists('[data-controller~="episode-feedback"] #episode-'.$third->getId());
+        $this->client->request('GET', '/series/'.$series->getId().'?season_completed=1');
+        self::assertSelectorTextContains('h1 .series-completion', 'Série entièrement vue');
         $this->client->request('POST','/bibliotheque/'.$entry->getId().'/suivi/episode/'.$third->getId(),['_token'=>$token,'watched'=>'0','return_anchor'=>'episode-'.$third->getId()],[],['HTTP_REFERER'=>$returnUrl]); self::assertResponseRedirects($returnUrl.'#episode-'.$third->getId());
         self::assertSame(2, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM episode_progress'));
         $this->em->clear();
