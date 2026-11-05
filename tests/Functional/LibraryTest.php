@@ -111,6 +111,60 @@ class LibraryTest extends WebTestCase
         self::assertSelectorExists('select[name="network"] option[value="Arte"]');
     }
 
+    public function testEveryLibraryStatusResumesAtTheFirstUnwatchedAiredEpisode(): void
+    {
+        $user = $this->user('resume-statuses@example.test');
+        $series = (new Series())->setTitle('Resume show');
+        $specials = new Season(0);
+        $special = new Episode(1); $special->setTitle('Special'); $special->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $specials->addEpisode($special);
+        $firstSeason = new Season(1);
+        $first = new Episode(1); $first->setTitle('First'); $first->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $firstSeason->addEpisode($first);
+        $currentSeason = new Season(2);
+        $watched = new Episode(1); $watched->setTitle('Already watched'); $watched->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $next = new Episode(2); $next->setTitle('Next to watch'); $next->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $currentSeason->addEpisode($watched); $currentSeason->addEpisode($next);
+        $series->addSeason($specials); $series->addSeason($firstSeason); $series->addSeason($currentSeason);
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $entry = new LibraryEntry($user, $series);
+        $this->em->persist($entry);
+        $this->em->persist(new \App\Entity\EpisodeProgress($user, $first));
+        $this->em->persist(new \App\Entity\EpisodeProgress($user, $watched));
+        $this->em->flush();
+
+        $this->client->loginUser($user);
+        foreach (array_keys(LibraryEntry::STATUSES) as $status) {
+            $entry->setStatus($status); $this->em->flush();
+            $this->client->request('GET', '/bibliotheque/'.$entry->getId().'/reprendre');
+            self::assertResponseRedirects('/series/'.$series->getId().'?saison=2#episode-'.$next->getId());
+        }
+    }
+
+    public function testACompletedSeriesResumesAtItsLastStandardSeason(): void
+    {
+        $user = $this->user('resume-completed@example.test');
+        $series = (new Series())->setTitle('Completed resume show');
+        $firstSeason = new Season(1);
+        $first = new Episode(1); $first->setTitle('First'); $first->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $firstSeason->addEpisode($first);
+        $lastSeason = new Season(2);
+        $last = new Episode(1); $last->setTitle('Last'); $last->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $lastSeason->addEpisode($last);
+        $series->addSeason($firstSeason); $series->addSeason($lastSeason);
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $entry = new LibraryEntry($user, $series); $entry->setStatus(LibraryEntry::STATUS_COMPLETED);
+        $this->em->persist($entry);
+        $this->em->persist(new \App\Entity\EpisodeProgress($user, $first));
+        $this->em->persist(new \App\Entity\EpisodeProgress($user, $last));
+        $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/bibliotheque/'.$entry->getId().'/reprendre');
+
+        self::assertResponseRedirects('/series/'.$series->getId().'?saison=2');
+    }
+
     public function testSeriesPageShowsSeasonAndEpisodeArtworkWithTheLibraryModal(): void
     {
         $user = $this->user('viewer@example.test');

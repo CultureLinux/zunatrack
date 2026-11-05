@@ -51,6 +51,20 @@ class ProgressService
     public function toggleSeason(User $user, LibraryEntry $entry, Season $season, bool $watched): void { if ($season->getSeries()->getId() !== $entry->getSeries()->getId()) throw new \LogicException(); $this->setWatched($user, $this->aired($season->getEpisodes()->toArray()), $watched); }
     public function toggleSeries(User $user, LibraryEntry $entry, bool $watched): void { $this->setWatched($user, $this->standardAired($entry->getSeries()), $watched); }
     public function nextEpisode(User $user, Series $series): ?array { $episodes=$this->standardAired($series); $watched=array_flip($this->progresses->watchedEpisodeIds($user,$episodes)); foreach($series->getSeasons() as $season) foreach($season->getEpisodes() as $episode) if(in_array($episode,$episodes,true)&&!isset($watched[$episode->getId()])) return ['season'=>$season,'episode'=>$episode]; return null; }
+    /** @return array{season:Season,episode:?Episode}|null */
+    public function resumeTarget(User $user, Series $series): ?array
+    {
+        $seasons = array_values(array_filter($series->getSeasons()->toArray(), fn(Season $season) => $season->getNumber() !== 0));
+        if ($seasons === []) $seasons = $series->getSeasons()->toArray();
+        if ($seasons === []) return null;
+
+        $episodes = array_merge(...array_map(fn(Season $season) => $season->getEpisodes()->toArray(), $seasons));
+        $watched = array_flip($this->progresses->watchedEpisodeIds($user, $episodes));
+        foreach ($seasons as $season) foreach ($season->getEpisodes() as $episode) if ($this->isAired($episode) && !isset($watched[$episode->getId()])) return ['season' => $season, 'episode' => $episode];
+        foreach ($seasons as $season) foreach ($season->getEpisodes() as $episode) if (!isset($watched[$episode->getId()])) return ['season' => $season, 'episode' => $episode];
+
+        return ['season' => $seasons[array_key_last($seasons)], 'episode' => null];
+    }
     private function progress(User $user, array $episodes): array { $total=count($episodes); $watched=count($this->progresses->watchedEpisodeIds($user,$episodes)); return ['watched'=>$watched,'total'=>$total,'percent'=>$total?(int)round($watched*100/$total):0,'complete'=>$total>0&&$watched===$total]; }
     private function setWatched(User $user, array $episodes, bool $watched): void { foreach($episodes as $episode){$existing=$this->progresses->findOneBy(['user'=>$user,'episode'=>$episode]);if($watched&&!$existing)$this->em->persist(new EpisodeProgress($user,$episode));if(!$watched&&$existing)$this->em->remove($existing);} $this->em->flush(); }
     private function aired(array $episodes): array { return array_values(array_filter($episodes, fn(Episode $episode) => $this->isAired($episode))); }
