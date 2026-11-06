@@ -89,6 +89,22 @@ class LibraryTest extends WebTestCase
         self::assertNotNull($this->em->getRepository(LibraryEntry::class)->find($entry->getId()));
     }
 
+    public function testNavigationShowsTheNumberOfAiredEpisodesStillToWatch(): void
+    {
+        $user = $this->user('badge@example.test');
+        $series = (new Series())->setTitle('Badge show'); $season = new Season(1);
+        $episode = new Episode(1); $episode->setTitle('Available'); $episode->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $secondEpisode = new Episode(2); $secondEpisode->setTitle('Also available'); $secondEpisode->setAirDate(new \DateTimeImmutable('2026-01-02'));
+        $season->addEpisode($episode); $season->addEpisode($secondEpisode); $series->addSeason($season);
+        $this->em->persist($user); $this->em->persist($series); $this->em->flush();
+        $this->em->persist(new LibraryEntry($user, $series)); $this->em->flush();
+
+        $this->client->loginUser($user); $this->client->request('GET', '/');
+
+        self::assertSelectorTextContains('.home-nav-count', '1');
+        self::assertSelectorExists('.home-nav-count[aria-label="1 épisode à voir"]');
+    }
+
     public function testStatusUpdateNeverRedirectsToAnExternalReferer(): void
     {
         $user = $this->user('return@example.test');
