@@ -16,15 +16,16 @@ use Symfony\Component\Routing\Attribute\Route;
 class CatalogController extends AbstractController
 {
     #[Route('/catalogue', name: 'app_catalog')]
-    public function index(Request $request, CatalogService $catalog, SeriesRepository $series): Response
+    public function index(Request $request, CatalogService $catalog, SeriesRepository $series, LibraryEntryRepository $entries, CatalogSourceRepository $sources, ProgressService $progress): Response
     {
         $query = trim((string) $request->query->get('q', ''));
         $actor = trim((string) $request->query->get('acteur', ''));
         $actorResults = $actor !== '' ? $series->findByActor($actor) : [];
         $results = $actor !== '' ? $actorResults : ($query !== '' ? $catalog->search($query) : []);
         $suggestions = $actor === '' && $query === '' ? $series->suggestForUser($this->getUser() instanceof User ? $this->getUser() : null) : [];
-        $suggestionGroups = $this->suggestionGroups($suggestions);
-        return $this->render('catalog/index.html.twig', compact('query', 'actor', 'results', 'suggestionGroups'));
+        $suggestionGroups = $this->suggestionGroups($suggestions); $seenResultIds=[]; $user=$this->getUser();
+        if ($user instanceof User) foreach ($entries->findForUser($user) as $entry) if ($progress->seriesProgress($user, $entry->getSeries())['complete']) { $seenResultIds[(string)$entry->getSeries()->getId()]=true; if ($source=$sources->findOneBy(['series'=>$entry->getSeries()])) $seenResultIds[$source->getExternalId()]=true; }
+        return $this->render('catalog/index.html.twig', compact('query', 'actor', 'results', 'suggestionGroups', 'seenResultIds'));
     }
     #[Route('/catalogue/tvmaze/{id}', name: 'app_catalog_import', methods: ['POST'], requirements: ['id'=>'\d+'])]
     public function import(string $id, Request $request, CatalogService $catalog): Response { $this->denyAccessUnlessGranted('ROLE_USER'); if (!$this->isCsrfTokenValid('catalog_import_'.$id, $request->request->getString('_token'))) throw $this->createAccessDeniedException(); $series=$catalog->import($id); return $this->redirectToRoute('app_series_show',['id'=>$series->getId()]); }

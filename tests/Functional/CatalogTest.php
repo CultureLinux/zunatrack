@@ -122,4 +122,20 @@ final class CatalogTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.series-poster[src="/media/posters/season.jpg"]');
     }
+
+    public function testCatalogMarksACompletedLibrarySeriesAsSeen(): void
+    {
+        $client = static::createClient(); $em = self::getContainer()->get(EntityManagerInterface::class);
+        foreach (['episode_progress', 'library_entry', 'catalog_source', 'series', 'user'] as $table) $em->getConnection()->executeStatement('DELETE FROM '.$table);
+        $user = (new User())->setEmail('seen@example.test');
+        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'password'));
+        $series = (new Series())->setTitle('Seen show')->setCast([['name' => 'Ava Viewer', 'character' => null, 'imageUrl' => null]]);
+        $season = new Season(1); $episode = new Episode(1); $episode->setTitle('Pilot'); $episode->setAirDate(new \DateTimeImmutable('2026-01-01')); $season->addEpisode($episode); $series->addSeason($season);
+        $em->persist($user); $em->persist($series); $em->flush();
+        $em->persist(new LibraryEntry($user, $series)); $em->persist(new \App\Entity\EpisodeProgress($user, $episode)); $em->flush();
+
+        $client->loginUser($user); $client->request('GET', '/catalogue?acteur=Ava%20Viewer');
+
+        self::assertSelectorExists('.result-card .catalog-seen[aria-label="Série entièrement vue"]');
+    }
 }
