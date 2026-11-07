@@ -25,4 +25,13 @@ final class PushSubscriptionTest extends TestCase
         self::assertSame(hash('sha256', 'https://push.example.test/subscriptions/a-secret-endpoint'), $subscription->getEndpointHash());
         self::assertSame('https://push.example.test/subscriptions/a-secret-endpoint', $subscription->getEndpoint());
     }
+
+    public function testItRecordsTheLatestDeliveryResult(): void
+    {
+        $subscription = PushSubscription::forUser((new User())->setEmail('viewer@example.test'), 'https://fcm.googleapis.com/fcm/send/device', 'key', 'auth', new \DateTimeImmutable());
+        $subscription->recordResult('failed');
+
+        self::assertSame('failed', $subscription->getLastResult());
+        self::assertInstanceOf(\DateTimeImmutable::class, $subscription->getLastResultAt());
+    }
 }
