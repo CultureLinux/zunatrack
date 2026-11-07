@@ -21,6 +21,20 @@ php85 bin/console cache:clear --env=prod
 
 Après chaque mise à jour : sauvegardez la base, déployez le code, lancez les migrations puis recompilez les assets.
 
+## Configuration et publication
+
+Copiez `.env.example` vers `.env` puis renseignez les valeurs propres à l'instance. Le fichier `.env` est ignoré par Git et ne doit jamais être versionné.
+
+Le pipeline GitLab est conservé dans le projet privé `clinux/zunatrack-ci`, afin que le dépôt GitHub public ne contienne aucun fichier GitLab CI. Avant une publication, vérifiez l'état de travail puis poussez explicitement la branche et ses tags sur les deux forges :
+
+```bash
+git status --short
+git push gitlab main --follow-tags
+git push github main --follow-tags
+```
+
+Les déploiements de production restent manuels depuis le pipeline GitLab et sont exécutés par le runner auto-hébergé `ams3`.
+
 ## Tâches de fond
 
 Exécutez un worker permanent : `php85 bin/console messenger:consume async --time-limit=3600 --memory-limit=128M --env=prod`.
