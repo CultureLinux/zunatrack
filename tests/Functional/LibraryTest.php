@@ -101,6 +101,19 @@ class LibraryTest extends WebTestCase
         self::assertNotNull($this->em->getRepository(LibraryEntry::class)->find($entry->getId()));
     }
 
+    public function testLibrarySearchRendersItsClearControlForTheFilterController(): void
+    {
+        $user = $this->user('library-search@example.test');
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/bibliotheque');
+
+        self::assertSelectorExists('[data-controller="library-filter"] [data-library-filter-target="query"]');
+        self::assertSelectorExists('[data-controller="library-filter"] [data-library-filter-target="clear"][hidden]');
+    }
+
     public function testNavigationShowsTheNumberOfAiredEpisodesStillToWatch(): void
     {
         $user = $this->user('badge@example.test');
