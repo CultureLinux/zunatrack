@@ -13,5 +13,13 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ExportController extends AbstractController
 {
     #[Route('/exports/zunatrack', name: 'app_export_zunatrack', methods: ['GET'])]
-    public function __invoke(ZunaTrackCsvExporter $exporter): StreamedResponse { $user=$this->getUser(); if(!$user instanceof User) throw $this->createAccessDeniedException(); return $exporter->stream($user); }
+    public function __invoke(ZunaTrackCsvExporter $exporter): StreamedResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $exporter->stream($user);
+    }
 }

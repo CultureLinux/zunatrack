@@ -75,8 +75,9 @@ final class ConfigurationTest extends WebTestCase
 
     private function user(string $email, bool $admin = false): User
     {
-        $user = (new User())->setEmail($email)->setRoles($admin ? ['ROLE_ADMIN'] : []);
+        $user = new User()->setEmail($email)->setRoles($admin ? ['ROLE_ADMIN'] : []);
         $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'a secure password'));
+
         return $user;
     }
 }

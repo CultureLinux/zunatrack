@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
+use App\Catalog\CatalogService;
 use App\Entity\LibraryEntry;
 use App\Entity\User;
-use App\Catalog\CatalogService;
 use App\Repository\LibraryEntryRepository;
 use App\Repository\SeriesRepository;
 use App\Watching\ProgressService;
@@ -24,9 +26,15 @@ class HomeController extends AbstractController
 
         $available = [];
         foreach ($entries->findForUser($user) as $entry) {
-            if (in_array($entry->getStatus(), [LibraryEntry::STATUS_COMPLETED, LibraryEntry::STATUS_DROPPED, LibraryEntry::STATUS_PAUSED], true)) continue;
-            if ($next = $progress->nextEpisode($user, $entry->getSeries())) { $catalog->enrichFromSnapshot($entry->getSeries(), $next['season']->getNumber()); $available[] = ['entry' => $entry, 'season' => $next['season'], 'episode' => $next['episode']]; }
+            if (\in_array($entry->getStatus(), [LibraryEntry::STATUS_COMPLETED, LibraryEntry::STATUS_DROPPED, LibraryEntry::STATUS_PAUSED], true)) {
+                continue;
+            }
+            if ($next = $progress->nextEpisode($user, $entry->getSeries())) {
+                $catalog->enrichFromSnapshot($entry->getSeries(), $next['season']->getNumber());
+                $available[] = ['entry' => $entry, 'season' => $next['season'], 'episode' => $next['episode']];
+            }
         }
+
         return $this->render('home/index.html.twig', ['availableEpisodes' => $available]);
     }
 }

@@ -1,0 +1,9 @@
+parameters:
+    # Niveau de départ sans baseline : à augmenter progressivement avec les corrections de typage.
+    level: 1
+    paths:
+        - src
+        - tests
+    tmpDir: var/cache/phpstan
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

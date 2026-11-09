@@ -1,5 +1,42 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\MessageHandler;
-use App\Entity\PushDelivery;use App\Message\DeliverEpisodeNotification;use App\Service\EpisodePushPayload;use App\Service\WebPushDelivery;use Doctrine\ORM\EntityManagerInterface;use Psr\Log\LoggerInterface;use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-#[AsMessageHandler] final readonly class DeliverEpisodeNotificationHandler {public function __construct(private EntityManagerInterface $em,private WebPushDelivery $push,private LoggerInterface $logger){} public function __invoke(DeliverEpisodeNotification $message):void{$delivery=$this->em->find(PushDelivery::class,$message->deliveryId);if(!$delivery instanceof PushDelivery)return;$subscription=$delivery->getSubscription();try{$sent=$this->push->send($subscription,EpisodePushPayload::forEpisode($delivery->getEpisode()));$subscription->recordResult($sent?'accepted':'failed');if($sent)$delivery->markDelivered();else $this->logger->warning('Échec de livraison Web Push.', ['delivery_id'=>$delivery->getId(),'status'=>'delivery_failed']);$this->em->flush();}catch(\Throwable $error){$subscription->recordResult('failed');$this->em->flush();$this->logger->error('Erreur Web Push.', ['delivery_id'=>$delivery->getId(),'status'=>'delivery_error','exception_type'=>$error::class]);throw $error;}}}
+
+use App\Entity\PushDelivery;
+use App\Message\DeliverEpisodeNotification;
+use App\Service\EpisodePushPayload;
+use App\Service\WebPushDelivery;
+use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+
+#[AsMessageHandler] final readonly class DeliverEpisodeNotificationHandler
+{
+    public function __construct(private EntityManagerInterface $em, private WebPushDelivery $push, private LoggerInterface $logger)
+    {
+    }
+
+    public function __invoke(DeliverEpisodeNotification $message): void
+    {
+        $delivery = $this->em->find(PushDelivery::class, $message->deliveryId);
+        if (!$delivery instanceof PushDelivery) {
+            return;
+        }$subscription = $delivery->getSubscription();
+        try {
+            $sent = $this->push->send($subscription, EpisodePushPayload::forEpisode($delivery->getEpisode()));
+            $subscription->recordResult($sent ? 'accepted' : 'failed');
+            if ($sent) {
+                $delivery->markDelivered();
+            } else {
+                $this->logger->warning('Échec de livraison Web Push.', ['delivery_id' => $delivery->getId(), 'status' => 'delivery_failed']);
+            }$this->em->flush();
+        } catch (\Throwable $error) {
+            $subscription->recordResult('failed');
+            $this->em->flush();
+            $this->logger->error('Erreur Web Push.', ['delivery_id' => $delivery->getId(), 'status' => 'delivery_error', 'exception_type' => $error::class]);
+            throw $error;
+        }
+    }
+}

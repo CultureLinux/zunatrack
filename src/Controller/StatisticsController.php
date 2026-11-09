@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\User;
@@ -14,7 +16,9 @@ final class StatisticsController extends AbstractController
     public function index(StatisticsService $statistics): Response
     {
         $user = $this->getUser();
-        if (!$user instanceof User) throw $this->createAccessDeniedException();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
 
         return $this->render('statistics/index.html.twig', ['statistics' => $statistics->forUser($user)]);
     }

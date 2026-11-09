@@ -12,11 +12,11 @@ final class PushEndpoint
 
         return false !== $parts
             && 'https' === ($parts['scheme'] ?? null)
-            && in_array($parts['host'] ?? null, ['fcm.googleapis.com', 'updates.push.services.mozilla.com'], true)
+            && \in_array($parts['host'] ?? null, ['fcm.googleapis.com', 'updates.push.services.mozilla.com'], true)
             && !isset($parts['user'])
             && !isset($parts['pass'])
             && (!isset($parts['port']) || 443 === $parts['port'])
             && !isset($parts['fragment'])
-            && strlen($endpoint) <= 2048;
+            && \strlen($endpoint) <= 2048;
     }
 }
