@@ -118,4 +118,40 @@ class AccountAccessTest extends WebTestCase
         ]));
         self::assertResponseRedirects('/mot-de-passe-oublie/verifiez-vos-emails');
     }
+
+    public function testLoginCreatesARememberMeCookieValidForFifteenDays(): void
+    {
+        $user = new User();
+        $user->setEmail('remember@example.test');
+        $user->setRoles(['ROLE_USER']);
+        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'une phrase de passe solide'));
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        $crawler = $this->client->request('GET', '/connexion');
+        $this->client->submit($crawler->selectButton('Se connecter')->form([
+            '_username' => 'remember@example.test',
+            '_password' => 'une phrase de passe solide',
+        ]));
+
+        self::assertResponseRedirects('/');
+        $cookies = $this->client->getResponse()->headers->getCookies();
+        $rememberMe = array_values(array_filter($cookies, static fn ($cookie): bool => 'REMEMBERME' === $cookie->getName()));
+        self::assertCount(1, $rememberMe);
+        self::assertSame(1296000, $rememberMe[0]->getMaxAge());
+    }
+
+    public function testMobileMenuIncludesTheAccountExitAction(): void
+    {
+        $user = new User()->setEmail('mobile@example.test')->setRoles(['ROLE_USER']);
+        $user->setPassword('not-used-by-login-user');
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/');
+
+        self::assertSelectorExists('.mobile-menu a[href="/preferences"]');
+        self::assertSelectorExists('.mobile-menu form[action="/deconnexion"] button[type="submit"]');
+    }
 }
