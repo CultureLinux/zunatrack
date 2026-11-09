@@ -473,6 +473,31 @@ class LibraryTest extends WebTestCase
         self::assertSelectorTextContains('.calendar-card__body', 'Calendar episode');
     }
 
+    public function testCalendarAndLibraryUseTheSameCountdownForAnUpcomingEpisode(): void
+    {
+        $user = $this->user('countdown@example.test');
+        $series = new Series()->setTitle('Countdown show');
+        $season = new Season(1);
+        $episode = new Episode(1);
+        $episode->setTitle('Tomorrow at midnight');
+        $episode->setAirDate(new \DateTimeImmutable('tomorrow midnight'));
+        $episode->setAiredAt(new \DateTimeImmutable('tomorrow midnight'));
+        $season->addEpisode($episode);
+        $series->addSeason($season);
+        $this->em->persist($user);
+        $this->em->persist($series);
+        $this->em->flush();
+        $this->em->persist(new LibraryEntry($user, $series));
+        $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/series/'.$series->getId().'?saison=1');
+        self::assertSelectorTextContains('.episode-countdown strong', 'J-0');
+
+        $this->client->request('GET', '/calendrier');
+        self::assertSelectorTextContains('.calendar-card__countdown strong', 'Aujourd’hui');
+    }
+
     public function testWatchingTheFirstEpisodeMovesAWatchlistEntryToWatching(): void
     {
         $user = $this->user('first-episode@example.test');
