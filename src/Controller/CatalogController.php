@@ -58,7 +58,10 @@ class CatalogController extends AbstractController
     {
         $show = $series->find($id) ?? throw $this->createNotFoundException();
         $selectedSeason = $request->query->getInt('saison') ?: null;
-        $catalog->enrichFromSnapshot($show, $selectedSeason);
+        $user = $this->getUser();
+        if ($user instanceof User) {
+            $catalog->enrichFromSnapshot($show, $selectedSeason);
+        }
         $selected = null;
         $next = null;
         foreach ($show->getSeasons() as $season) {
@@ -78,7 +81,6 @@ class CatalogController extends AbstractController
                 }
             }
         }
-        $user = $this->getUser();
         $entry = $user instanceof User ? $entries->findForUserAndSeries($user, $show) : null;
 
         return $this->render('catalog/show.html.twig', ['series' => $show, 'entry' => $entry, 'selectedSeason' => $selectedSeason, 'selectedSeasonEntity' => $selected, 'nextSeason' => $next, 'seasonPayload' => $payload, 'seriesProgress' => $entry ? $progress->seriesProgress($user, $show) : null, 'seasonProgress' => $entry ? $progress->allSeasonProgress($user, $show) : [], 'watchedEpisodes' => $entry && $selected ? $progress->watchedMap($user, $selected) : [], 'catchUpEpisodes' => $entry && $selected ? $progress->catchUpMap($user, $selected) : [], 'nextEpisode' => $entry ? $progress->nextEpisode($user, $show) : null]);

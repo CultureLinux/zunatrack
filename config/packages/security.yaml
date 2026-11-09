@@ -38,6 +38,7 @@ security:
         - { path: ^/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/mot-de-passe-oublie, roles: PUBLIC_ACCESS }
         - { path: ^/reinitialiser, roles: PUBLIC_ACCESS }
+        - { path: ^/series/\d+$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_USER }
 

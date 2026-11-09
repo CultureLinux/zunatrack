@@ -22,6 +22,15 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class CatalogTest extends WebTestCase
 {
+    public function testAnonymousVisitorCannotAccessTheCatalog(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/catalogue');
+
+        self::assertResponseRedirects('/connexion');
+    }
+
     public function testCatalogImportIsNotAvailableViaGet(): void
     {
         $client = static::createClient();
@@ -136,17 +145,33 @@ final class CatalogTest extends WebTestCase
         $episode->setTitle('Pilot');
         $season->addEpisode($episode);
         $series->addSeason($season);
-        $user = new User()->setEmail('viewer@example.test');
-        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'password'));
         $em->persist($series);
-        $em->persist($user);
         $em->flush();
 
-        $client->loginUser($user);
         $client->request('GET', '/series/'.$series->getId().'?saison=1');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.series-poster[src="/media/posters/season.jpg"]');
+    }
+
+    public function testAnonymousVisitorDoesNotTriggerACatalogImportFromASeriesPage(): void
+    {
+        $client = static::createClient();
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        foreach (['library_entry', 'catalog_source', 'series', 'user'] as $table) {
+            $em->getConnection()->executeStatement('DELETE FROM '.$table);
+        }
+        $series = new Series()->setTitle('Lightweight show');
+        $source = new CatalogSource('tvmaze', '999999999', $series);
+        $em->persist($series);
+        $em->persist($source);
+        $em->flush();
+
+        $client->request('GET', '/series/'.$series->getId());
+
+        self::assertResponseIsSuccessful();
+        $em->refresh($source);
+        self::assertSame([], $source->getPayload());
     }
 
     public function testCatalogMarksACompletedLibrarySeriesAsSeen(): void

@@ -52,13 +52,15 @@ class AccountAccessTest extends WebTestCase
         foreach (['library_entry', 'catalog_source', 'series'] as $table) {
             $this->entityManager->getConnection()->executeStatement('DELETE FROM '.$table);
         }
-        $this->entityManager->persist(new Series()->setTitle('Public show')->setPosterUrl('/media/posters/public.jpg')->setPopularity(99));
+        $series = new Series()->setTitle('Public show')->setPosterUrl('/media/posters/public.jpg')->setPopularity(99);
+        $this->entityManager->persist($series);
         $this->entityManager->flush();
 
         $this->client->request('GET', '/');
 
         self::assertSelectorExists('.landing-series-carousel');
         self::assertSelectorExists('.landing-series-carousel img[src="/media/posters/public.jpg"]');
+        self::assertSelectorExists('.landing-series-carousel a[href="/series/'.$series->getId().'"]');
         self::assertSelectorTextNotContains('.landing-page', 'Une application, vos données');
     }
 
