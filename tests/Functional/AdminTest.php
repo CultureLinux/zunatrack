@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional;
 
 use App\Entity\LibraryEntry;
@@ -28,9 +30,13 @@ class AdminTest extends WebTestCase
     {
         $admin = $this->user('admin@example.test', true);
         $member = $this->user('member@example.test');
-        $series = (new Series())->setTitle('Silo');
-        $this->em->persist($admin); $this->em->persist($member); $this->em->persist($series); $this->em->flush();
-        $this->em->persist(new LibraryEntry($member, $series)); $this->em->flush();
+        $series = new Series()->setTitle('Silo');
+        $this->em->persist($admin);
+        $this->em->persist($member);
+        $this->em->persist($series);
+        $this->em->flush();
+        $this->em->persist(new LibraryEntry($member, $series));
+        $this->em->flush();
 
         $client = static::getClient();
         $client->loginUser($admin);
@@ -38,8 +44,10 @@ class AdminTest extends WebTestCase
         self::assertSelectorExists('.stat-grid a[href="/admin/utilisateurs"]');
         self::assertSelectorExists('.admin-tabs a[href="/admin/series"]');
         self::assertSelectorExists('.admin-tabs a[href="/admin/api-tvmaze"]');
-        $client->request('GET', '/admin/series'); self::assertSelectorTextContains('.admin-table', 'Silo');
-        $client->request('GET', '/admin/bibliotheque'); self::assertSelectorTextContains('.admin-table', 'member@example.test');
+        $client->request('GET', '/admin/series');
+        self::assertSelectorTextContains('.admin-table', 'Silo');
+        $client->request('GET', '/admin/bibliotheque');
+        self::assertSelectorTextContains('.admin-table', 'member@example.test');
 
         $crawler = $client->request('GET', '/admin/utilisateurs/'.$member->getId());
         $client->submit($crawler->selectButton('Enregistrer')->form(['admin' => '1', 'plain_password' => 'mot de passe bien secret']));
@@ -55,10 +63,15 @@ class AdminTest extends WebTestCase
 
     public function testAdminSeriesListShowsPostersAndPaginates(): void
     {
-        $admin = $this->user('catalog-admin@example.test', true); $this->em->persist($admin);
-        for ($number = 1; $number <= 25; $number++) $this->em->persist((new Series())->setTitle(sprintf('Série %02d', $number))->setPosterUrl($number === 1 ? '/media/posters/admin.jpg' : null));
+        $admin = $this->user('catalog-admin@example.test', true);
+        $this->em->persist($admin);
+        for ($number = 1; $number <= 25; ++$number) {
+            $this->em->persist(new Series()->setTitle(\sprintf('Série %02d', $number))->setPosterUrl($number === 1 ? '/media/posters/admin.jpg' : null));
+        }
         $this->em->flush();
-        $client = static::getClient(); $client->loginUser($admin); $client->request('GET', '/admin/series');
+        $client = static::getClient();
+        $client->loginUser($admin);
+        $client->request('GET', '/admin/series');
         self::assertSelectorExists('.admin-series__poster[src="/media/posters/admin.jpg"]');
         self::assertSelectorExists('.admin-pagination a[href="/admin/series?page=2"]');
         self::assertSelectorTextNotContains('.admin-table', 'Série 25');
@@ -66,8 +79,9 @@ class AdminTest extends WebTestCase
 
     private function user(string $email, bool $admin = false): User
     {
-        $user = (new User())->setEmail($email)->setRoles($admin ? ['ROLE_ADMIN'] : []);
+        $user = new User()->setEmail($email)->setRoles($admin ? ['ROLE_ADMIN'] : []);
         $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'mot de passe initial'));
+
         return $user;
     }
 }

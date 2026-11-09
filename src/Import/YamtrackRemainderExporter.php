@@ -19,8 +19,12 @@ final class YamtrackRemainderExporter
             $out = fopen('php://output', 'wb');
             fputcsv($out, self::HEADERS, ',', '"', '');
             foreach ($batch->getItems() as $item) {
-                if (in_array($item->getState(), [ImportItem::STATE_IMPORTED, ImportItem::STATE_MERGED], true)) continue;
-                foreach (ImportPayload::fromArray($item->getPayload())->yamtrackRows as $row) fputcsv($out, $row, ',', '"', '');
+                if (\in_array($item->getState(), [ImportItem::STATE_IMPORTED, ImportItem::STATE_MERGED], true)) {
+                    continue;
+                }
+                foreach (ImportPayload::fromArray($item->getPayload())->yamtrackRows as $row) {
+                    fputcsv($out, $row, ',', '"', '');
+                }
             }
             fclose($out);
         });

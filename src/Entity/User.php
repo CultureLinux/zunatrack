@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\UserRepository;
@@ -35,7 +37,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 12)] private string $density = 'normal';
     #[ORM\Column(length: 12)] private string $fontSize = 'normal';
     #[ORM\Column(length: 12)] private string $accent = 'blue';
-
     public function getId(): ?int
     {
         return $this->id;
@@ -87,9 +88,64 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
     }
-    public function getLocale(): string { return $this->locale; } public function setLocale(string $value): static { $this->locale = $value; return $this; }
-    public function getTheme(): string { return $this->theme; } public function setTheme(string $value): static { $this->theme = $value; return $this; }
-    public function getDensity(): string { return $this->density; } public function setDensity(string $value): static { $this->density = $value; return $this; }
-    public function getFontSize(): string { return $this->fontSize; } public function setFontSize(string $value): static { $this->fontSize = $value; return $this; }
-    public function getAccent(): string { return $this->accent; } public function setAccent(string $value): static { $this->accent = $value; return $this; }
+
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(string $value): static
+    {
+        $this->locale = $value;
+
+        return $this;
+    }
+
+    public function getTheme(): string
+    {
+        return $this->theme;
+    }
+
+    public function setTheme(string $value): static
+    {
+        $this->theme = $value;
+
+        return $this;
+    }
+
+    public function getDensity(): string
+    {
+        return $this->density;
+    }
+
+    public function setDensity(string $value): static
+    {
+        $this->density = $value;
+
+        return $this;
+    }
+
+    public function getFontSize(): string
+    {
+        return $this->fontSize;
+    }
+
+    public function setFontSize(string $value): static
+    {
+        $this->fontSize = $value;
+
+        return $this;
+    }
+
+    public function getAccent(): string
+    {
+        return $this->accent;
+    }
+
+    public function setAccent(string $value): static
+    {
+        $this->accent = $value;
+
+        return $this;
+    }
 }

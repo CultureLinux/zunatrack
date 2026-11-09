@@ -26,20 +26,88 @@ class ImportItem
     #[ORM\Column(type: 'json')] private array $candidates = [];
     #[ORM\Column(length: 500, nullable: true)] private ?string $coverUrl = null;
     #[ORM\Column(length: 64, nullable: true)] private ?string $selectedCandidateId = null;
-
     /** @param array<string,mixed> $payload */
-    public function __construct(ImportBatch $batch, string $externalKey, string $title, array $payload) { $this->batch=$batch; $this->externalKey=$externalKey; $this->title=$title; $this->payload=$payload; $batch->addItem($this); }
-    public function getId(): ?int { return $this->id; }
-    public function getBatch(): ImportBatch { return $this->batch; }
-    public function getExternalKey(): string { return $this->externalKey; }
-    public function getTitle(): string { return $this->title; }
-    /** @return array<string,mixed> */ public function getPayload(): array { return $this->payload; }
-    public function getState(): string { return $this->state; }
-    public function getReason(): ?string { return $this->reason; }
-    /** @return list<array{id:string,title:string,posterUrl:?string}> */ public function getCandidates(): array { return $this->candidates; }
-    public function getCoverUrl(): ?string { return $this->coverUrl; }
-    public function getSelectedCandidateId(): ?string { return $this->selectedCandidateId; }
-    /** @param list<array{id:string,title:string,posterUrl:?string}> $candidates */ public function unresolved(string $reason, array $candidates=[]): void { $this->state=self::STATE_UNRESOLVED; $this->reason=$reason; $this->candidates=$candidates; }
-    public function complete(string $state, ?string $coverUrl): void { $this->state=$state; $this->coverUrl=$coverUrl; $this->reason=null; $this->candidates=[]; }
-    public function replay(string $candidateId): void { $this->selectedCandidateId=$candidateId; $this->state=self::STATE_PENDING; $this->reason=null; }
+    public function __construct(ImportBatch $batch, string $externalKey, string $title, array $payload)
+    {
+        $this->batch = $batch;
+        $this->externalKey = $externalKey;
+        $this->title = $title;
+        $this->payload = $payload;
+        $batch->addItem($this);
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getBatch(): ImportBatch
+    {
+        return $this->batch;
+    }
+
+    public function getExternalKey(): string
+    {
+        return $this->externalKey;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    /** @return array<string,mixed> */
+    public function getPayload(): array
+    {
+        return $this->payload;
+    }
+
+    public function getState(): string
+    {
+        return $this->state;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    /** @return list<array{id:string,title:string,posterUrl:?string}> */
+    public function getCandidates(): array
+    {
+        return $this->candidates;
+    }
+
+    public function getCoverUrl(): ?string
+    {
+        return $this->coverUrl;
+    }
+
+    public function getSelectedCandidateId(): ?string
+    {
+        return $this->selectedCandidateId;
+    }
+
+    /** @param list<array{id:string,title:string,posterUrl:?string}> $candidates */
+    public function unresolved(string $reason, array $candidates = []): void
+    {
+        $this->state = self::STATE_UNRESOLVED;
+        $this->reason = $reason;
+        $this->candidates = $candidates;
+    }
+
+    public function complete(string $state, ?string $coverUrl): void
+    {
+        $this->state = $state;
+        $this->coverUrl = $coverUrl;
+        $this->reason = null;
+        $this->candidates = [];
+    }
+
+    public function replay(string $candidateId): void
+    {
+        $this->selectedCandidateId = $candidateId;
+        $this->state = self::STATE_PENDING;
+        $this->reason = null;
+    }
 }

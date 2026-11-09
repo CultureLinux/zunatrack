@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional;
 
 use App\Entity\Episode;
@@ -34,15 +36,30 @@ final class StatisticsTest extends WebTestCase
     {
         $owner = $this->user('stats-owner@example.test');
         $other = $this->user('stats-other@example.test');
-        $series = (new Series())->setTitle('Statistical Show')->setGenres(['Drame', 'Mystère']);
+        $series = new Series()->setTitle('Statistical Show')->setGenres(['Drame', 'Mystère']);
         $season = new Season(1);
-        $watched = new Episode(1); $watched->setTitle('Vu'); $watched->setAirDate(new \DateTimeImmutable('-2 days')); $watched->setRuntime(1562);
-        $unwatched = new Episode(2); $unwatched->setTitle('À voir'); $unwatched->setAirDate(new \DateTimeImmutable('-1 day')); $unwatched->setRuntime(48);
-        $season->addEpisode($watched); $season->addEpisode($unwatched); $series->addSeason($season);
-        $otherSeries = (new Series())->setTitle('Private other show');
-        $this->em->persist($owner); $this->em->persist($other); $this->em->persist($series); $this->em->persist($otherSeries); $this->em->flush();
+        $watched = new Episode(1);
+        $watched->setTitle('Vu');
+        $watched->setAirDate(new \DateTimeImmutable('-2 days'));
+        $watched->setRuntime(1562);
+        $unwatched = new Episode(2);
+        $unwatched->setTitle('À voir');
+        $unwatched->setAirDate(new \DateTimeImmutable('-1 day'));
+        $unwatched->setRuntime(48);
+        $season->addEpisode($watched);
+        $season->addEpisode($unwatched);
+        $series->addSeason($season);
+        $otherSeries = new Series()->setTitle('Private other show');
+        $this->em->persist($owner);
+        $this->em->persist($other);
+        $this->em->persist($series);
+        $this->em->persist($otherSeries);
+        $this->em->flush();
         $entry = new LibraryEntry($owner, $series);
-        $this->em->persist($entry); $this->em->persist(new EpisodeProgress($owner, $watched)); $this->em->persist(new LibraryEntry($other, $otherSeries)); $this->em->flush();
+        $this->em->persist($entry);
+        $this->em->persist(new EpisodeProgress($owner, $watched));
+        $this->em->persist(new LibraryEntry($other, $otherSeries));
+        $this->em->flush();
 
         $this->client->loginUser($owner);
         $this->client->request('GET', '/statistiques');
@@ -124,7 +141,8 @@ final class StatisticsTest extends WebTestCase
     public function testStatisticsShowAnEmptyStateWithoutLibraryData(): void
     {
         $user = $this->user('empty-stats@example.test');
-        $this->em->persist($user); $this->em->flush();
+        $this->em->persist($user);
+        $this->em->flush();
         $this->client->loginUser($user);
         $this->client->request('GET', '/statistiques');
 
@@ -134,7 +152,7 @@ final class StatisticsTest extends WebTestCase
 
     private function user(string $email): User
     {
-        $user = (new User())->setEmail($email);
+        $user = new User()->setEmail($email);
         $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'password'));
 
         return $user;
@@ -142,7 +160,7 @@ final class StatisticsTest extends WebTestCase
 
     private function seriesWithAiredEpisode(string $title): Series
     {
-        $series = (new Series())->setTitle($title);
+        $series = new Series()->setTitle($title);
         $season = new Season(1);
         $episode = new Episode(1);
         $episode->setTitle('Épisode diffusé');

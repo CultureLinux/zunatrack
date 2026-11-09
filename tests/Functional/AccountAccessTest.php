@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Functional;
 
-use App\Entity\User;
 use App\Entity\Series;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
 
@@ -47,8 +49,10 @@ class AccountAccessTest extends WebTestCase
 
     public function testAnonymousHomepageShowsLocalSeriesAndOmitsTheClosingDataBlock(): void
     {
-        foreach (['library_entry', 'catalog_source', 'series'] as $table) $this->entityManager->getConnection()->executeStatement('DELETE FROM '.$table);
-        $this->entityManager->persist((new Series())->setTitle('Public show')->setPosterUrl('/media/posters/public.jpg')->setPopularity(99));
+        foreach (['library_entry', 'catalog_source', 'series'] as $table) {
+            $this->entityManager->getConnection()->executeStatement('DELETE FROM '.$table);
+        }
+        $this->entityManager->persist(new Series()->setTitle('Public show')->setPosterUrl('/media/posters/public.jpg')->setPopularity(99));
         $this->entityManager->flush();
 
         $this->client->request('GET', '/');

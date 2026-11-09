@@ -17,9 +17,9 @@ final class EpisodePushPayload
 
         return [
             'title' => $series->getTitle(),
-            'body' => sprintf('%s — S%02dE%02d %s', $series->getTitle(), $season->getNumber(), $episode->getNumber(), $episode->getTitle()),
-            'url' => $series->getId() === null ? '/' : sprintf('/series/%d?saison=%d#episode-%d', $series->getId(), $season->getNumber(), $episode->getId()),
-            'tag' => sprintf('episode-%d', $episode->getId()),
+            'body' => \sprintf('%s — S%02dE%02d %s', $series->getTitle(), $season->getNumber(), $episode->getNumber(), $episode->getTitle()),
+            'url' => $series->getId() === null ? '/' : \sprintf('/series/%d?saison=%d#episode-%d', $series->getId(), $season->getNumber(), $episode->getId()),
+            'tag' => \sprintf('episode-%d', $episode->getId()),
             'icon' => $poster,
             'image' => $episode->getCoverUrl() ?? $poster,
         ];

@@ -10,7 +10,10 @@ use Doctrine\Migrations\AbstractMigration;
 
 final class Version20261104130000 extends AbstractMigration
 {
-    public function getDescription(): string { return 'Add instance settings, browser push subscriptions, and episode delivery trace.'; }
+    public function getDescription(): string
+    {
+        return 'Add instance settings, browser push subscriptions, and episode delivery trace.';
+    }
 
     public function up(Schema $schema): void
     {
@@ -20,6 +23,7 @@ final class Version20261104130000 extends AbstractMigration
             $this->addSql('CREATE UNIQUE INDEX uniq_push_subscription_endpoint ON push_subscription (endpoint_hash)');
             $this->addSql('CREATE TABLE push_delivery (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, episode_id INTEGER NOT NULL, subscription_id INTEGER NOT NULL, queued_at DATETIME NOT NULL, delivered_at DATETIME DEFAULT NULL, CONSTRAINT FK_PUSH_DELIVERY_EPISODE FOREIGN KEY (episode_id) REFERENCES episode (id) ON DELETE CASCADE, CONSTRAINT FK_PUSH_DELIVERY_SUBSCRIPTION FOREIGN KEY (subscription_id) REFERENCES push_subscription (id) ON DELETE CASCADE)');
             $this->addSql('CREATE UNIQUE INDEX uniq_push_delivery_episode_subscription ON push_delivery (episode_id, subscription_id)');
+
             return;
         }
         $this->addSql('CREATE TABLE instance_configuration (id INT NOT NULL, public_registration TINYINT(1) NOT NULL, account_limit INT DEFAULT NULL, vapid_subject VARCHAR(255) DEFAULT NULL, vapid_public_key LONGTEXT DEFAULT NULL, encrypted_vapid_private_key LONGTEXT DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4');
@@ -30,5 +34,10 @@ final class Version20261104130000 extends AbstractMigration
         $this->addSql('ALTER TABLE push_delivery ADD CONSTRAINT FK_PUSH_DELIVERY_SUBSCRIPTION FOREIGN KEY (subscription_id) REFERENCES push_subscription (id) ON DELETE CASCADE');
     }
 
-    public function down(Schema $schema): void { $this->addSql('DROP TABLE push_delivery'); $this->addSql('DROP TABLE push_subscription'); $this->addSql('DROP TABLE instance_configuration'); }
+    public function down(Schema $schema): void
+    {
+        $this->addSql('DROP TABLE push_delivery');
+        $this->addSql('DROP TABLE push_subscription');
+        $this->addSql('DROP TABLE instance_configuration');
+    }
 }

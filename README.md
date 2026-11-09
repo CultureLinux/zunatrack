@@ -52,8 +52,12 @@ Servez exclusivement `public/`, forcez HTTPS et ajoutez au minimum `X-Content-Ty
 ## Vérification
 
 ```bash
-php85 bin/phpunit
+php85 /usr/bin/composer cs-check
+php85 /usr/bin/composer stan
+php85 /usr/bin/composer test
 php85 bin/console lint:yaml config
 php85 bin/console lint:twig templates
 php85 /usr/bin/composer audit --locked
 ```
+
+Pour appliquer le formatage PSR-12/Symfony aux fichiers PHP de `src/` et `tests/`, lancez `php85 /usr/bin/composer cs-fix`. Le contrôle statique PHPStan démarre au niveau 1 sans baseline ; augmentez son niveau au fur et à mesure des corrections de typage.

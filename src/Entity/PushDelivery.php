@@ -16,6 +16,30 @@ final class PushDelivery
     #[ORM\ManyToOne] #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')] private PushSubscription $subscription;
     #[ORM\Column] private \DateTimeImmutable $queuedAt;
     #[ORM\Column(nullable: true)] private ?\DateTimeImmutable $deliveredAt = null;
-    public function __construct(Episode $episode, PushSubscription $subscription) { $this->episode = $episode; $this->subscription = $subscription; $this->queuedAt = new \DateTimeImmutable(); }
-    public function getId(): ?int { return $this->id; } public function getEpisode(): Episode { return $this->episode; } public function getSubscription(): PushSubscription { return $this->subscription; } public function markDelivered(): void { $this->deliveredAt = new \DateTimeImmutable(); }
+    public function __construct(Episode $episode, PushSubscription $subscription)
+    {
+        $this->episode = $episode;
+        $this->subscription = $subscription;
+        $this->queuedAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getEpisode(): Episode
+    {
+        return $this->episode;
+    }
+
+    public function getSubscription(): PushSubscription
+    {
+        return $this->subscription;
+    }
+
+    public function markDelivered(): void
+    {
+        $this->deliveredAt = new \DateTimeImmutable();
+    }
 }

@@ -14,7 +14,7 @@ final class PushSubscriptionTest extends TestCase
     {
         $activatedAt = new \DateTimeImmutable('2026-11-04 14:00:00+00:00');
         $subscription = PushSubscription::forUser(
-            (new User())->setEmail('viewer@example.test'),
+            new User()->setEmail('viewer@example.test'),
             'https://push.example.test/subscriptions/a-secret-endpoint',
             'browser-public-key',
             'browser-auth-secret',
@@ -28,7 +28,7 @@ final class PushSubscriptionTest extends TestCase
 
     public function testItRecordsTheLatestDeliveryResult(): void
     {
-        $subscription = PushSubscription::forUser((new User())->setEmail('viewer@example.test'), 'https://fcm.googleapis.com/fcm/send/device', 'key', 'auth', new \DateTimeImmutable());
+        $subscription = PushSubscription::forUser(new User()->setEmail('viewer@example.test'), 'https://fcm.googleapis.com/fcm/send/device', 'key', 'auth', new \DateTimeImmutable());
         $subscription->recordResult('failed');
 
         self::assertSame('failed', $subscription->getLastResult());

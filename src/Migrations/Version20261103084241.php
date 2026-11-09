@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Migrations;
 
-use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
+use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
@@ -28,6 +28,7 @@ final class Version20261103084241 extends AbstractMigration
             $this->addSql('CREATE UNIQUE INDEX uniq_episode_number ON episode (season_id, number)');
             $this->addSql('CREATE TABLE catalog_source (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, provider VARCHAR(40) NOT NULL, external_id VARCHAR(100) NOT NULL, payload CLOB NOT NULL, fetched_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, series_id INTEGER NOT NULL UNIQUE, CONSTRAINT FK_ED8E673A5278319C FOREIGN KEY (series_id) REFERENCES series (id) ON DELETE CASCADE)');
             $this->addSql('CREATE UNIQUE INDEX uniq_catalog_source ON catalog_source (provider, external_id)');
+
             return;
         }
         $this->addSql('CREATE TABLE catalog_source (id INT AUTO_INCREMENT NOT NULL, provider VARCHAR(40) NOT NULL, external_id VARCHAR(100) NOT NULL, payload JSON NOT NULL, fetched_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, series_id INT NOT NULL, UNIQUE INDEX UNIQ_ED8E673A5278319C (series_id), UNIQUE INDEX uniq_catalog_source (provider, external_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
@@ -42,7 +43,12 @@ final class Version20261103084241 extends AbstractMigration
     public function down(Schema $schema): void
     {
         if ($this->connection->getDatabasePlatform() instanceof SQLitePlatform) {
-            $this->addSql('DROP TABLE catalog_source'); $this->addSql('DROP TABLE episode'); $this->addSql('DROP TABLE season'); $this->addSql('DROP TABLE series'); return;
+            $this->addSql('DROP TABLE catalog_source');
+            $this->addSql('DROP TABLE episode');
+            $this->addSql('DROP TABLE season');
+            $this->addSql('DROP TABLE series');
+
+            return;
         }
         $this->addSql('ALTER TABLE catalog_source DROP FOREIGN KEY FK_ED8E673A5278319C');
         $this->addSql('ALTER TABLE episode DROP FOREIGN KEY FK_DDAA1CDA4EC001D1');

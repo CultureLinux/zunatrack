@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\User;
@@ -34,7 +36,7 @@ class ResetPasswordController extends AbstractController
             if ($user instanceof User) {
                 try {
                     $resetToken = $this->resetPasswordHelper->generateResetToken($user);
-                    $mailer->send((new TemplatedEmail())
+                    $mailer->send(new TemplatedEmail()
                         ->to($user->getEmail())
                         ->subject('Réinitialisez votre mot de passe ZunaTrack')
                         ->htmlTemplate('reset_password/email.html.twig')
@@ -66,7 +68,7 @@ class ResetPasswordController extends AbstractController
         }
 
         $token = $request->getSession()->get('reset_password_token');
-        if (!is_string($token) || '' === $token) {
+        if (!\is_string($token) || '' === $token) {
             return $this->redirectToRoute('app_forgot_password_request');
         }
 
