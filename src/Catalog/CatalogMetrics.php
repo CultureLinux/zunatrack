@@ -17,7 +17,8 @@ final class CatalogMetrics
     {
         $values = $this->totals();
         $values[$kind] = ($values[$kind] ?? 0) + 1;
-        $day = new \DateTimeImmutable()->format('Y-m-d');
+        $now = new \DateTimeImmutable();
+        $day = $now->format('Y-m-d');
         $values['history'][$day][$kind] = ($values['history'][$day][$kind] ?? 0) + 1;
         $this->cache->delete('catalog.metrics');
         $this->cache->get('catalog.metrics', function (ItemInterface $item) use ($values) {
