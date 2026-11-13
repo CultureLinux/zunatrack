@@ -39,7 +39,19 @@ Les déploiements de production restent manuels depuis le pipeline GitLab et son
 
 Exécutez un worker permanent : `php85 bin/console messenger:consume async --time-limit=3600 --memory-limit=128M --env=prod`.
 
-Planifiez chaque minute `php85 bin/console app:notify-aired-episodes --env=prod`. Les imports et les notifications Push dépendent de ce worker.
+Planifiez chaque minute `php85 bin/console app:notify-aired-episodes --env=prod`. Les imports et les notifications Push dépendent du worker ; les notifications nécessitent aussi cette commande de découverte.
+
+Pour un serveur systemd avec l'utilisateur `zunatrack` et le code dans `/home/zunatrack/www`, installez les unités de [`deploy/systemd/`](deploy/systemd/) :
+
+```bash
+sudo cp deploy/systemd/zunatrack-* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now zunatrack-messenger.service zunatrack-notify.timer
+systemctl status zunatrack-messenger.service zunatrack-notify.timer
+journalctl -u zunatrack-messenger.service -u zunatrack-notify.service -n 100 --no-pager
+```
+
+Vérifiez que `php85` est accessible dans le PATH du service (`command -v php85`), que les variables de production sont disponibles pour `zunatrack` et que l'utilisateur peut écrire dans `var/`. PHP-FPM sert les requêtes web ; les unités lancent PHP en CLI. Si un cron appelle déjà `app:notify-aired-episodes`, désactivez-le pour éviter un doublon.
 
 ## Sauvegarde et restauration
 

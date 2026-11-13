@@ -1,0 +1,14 @@
+[Unit]
+Description=ZunaTrack discover aired episodes for Web Push
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=zunatrack
+Group=zunatrack
+WorkingDirectory=/home/zunatrack/www
+Environment=APP_ENV=prod
+ExecStart=/usr/bin/php85 bin/console app:notify-aired-episodes --env=prod --no-interaction
+StandardOutput=journal
+StandardError=journal

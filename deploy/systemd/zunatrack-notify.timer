@@ -1,0 +1,10 @@
+[Unit]
+Description=Check ZunaTrack aired episodes every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+Unit=zunatrack-notify.service
+
+[Install]
+WantedBy=timers.target
