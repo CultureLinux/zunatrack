@@ -15,11 +15,14 @@ PHP 8.5 avec Sodium, MariaDB 10.11+, Composer, Node.js et nginx. Configurez `DAT
 ```bash
 php85 /usr/bin/composer install --no-dev --optimize-autoloader
 php85 bin/console doctrine:migrations:migrate --no-interaction --env=prod
+php85 bin/console tailwind:build --minify --env=prod
 php85 bin/console asset-map:compile --env=prod
 php85 bin/console cache:clear --env=prod
 ```
 
-Après chaque mise à jour : sauvegardez la base, déployez le code, lancez les migrations puis recompilez les assets.
+Après chaque mise à jour : sauvegardez la base, déployez le code, lancez les migrations puis compilez Tailwind avant AssetMapper. Sans cette étape, AssetMapper peut republier un ancien CSS malgré des sources à jour.
+
+La vérification du catalogue depuis l’administration retélécharge aussi les images d’épisodes dont le fichier a disparu malgré une URL enregistrée, et recharge les snapshots incomplets. Les recherches conservent une affiche déjà connue si un nouveau téléchargement échoue. Pour un nouveau résultat, les données légères et l’URL d’affiche TVmaze sont conservées ; une URL HTTPS de static.tvmaze.com sert de repli si le cache local échoue. Une nouvelle recherche retente le téléchargement, sans ouverture de fiche ni import des saisons et épisodes.
 
 ## Configuration et publication
 
