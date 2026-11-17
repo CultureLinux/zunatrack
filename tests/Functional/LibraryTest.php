@@ -421,7 +421,7 @@ class LibraryTest extends WebTestCase
         self::assertSame(LibraryEntry::STATUS_WATCHING, $entry->getStatus());
     }
 
-    public function testUpcomingEpisodeShowsItsCountdownInsteadOfArtwork(): void
+    public function testUpcomingEpisodeShowsItsArtworkAndCountdown(): void
     {
         $user = $this->user('future@example.test');
         $series = new Series()->setTitle('Future show');
@@ -444,7 +444,40 @@ class LibraryTest extends WebTestCase
         self::assertSelectorTextContains('.episode-card', 'Future episode');
         self::assertSelectorExists('.episode-countdown');
         self::assertSelectorTextContains('.episode-countdown', 'avant diffusion');
-        self::assertSelectorNotExists('.episode-card img[src="/media/posters/future-episode.jpg"]');
+        self::assertSelectorExists('.episode-card img[src="/media/posters/future-episode.jpg"]');
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('episodeFallbacks')]
+    public function testEpisodeArtworkFallsBackWithoutOpeningAnotherPage(?string $seasonCover, ?string $seriesPoster, bool $upcoming, string $expectedImage): void
+    {
+        $series = new Series()->setTitle('Fallback show')->setPosterUrl($seriesPoster);
+        $season = new Season(1);
+        $season->setCoverUrl($seasonCover);
+        $episode = new Episode(1);
+        $episode->setTitle('Fallback episode');
+        $episode->setAiredAt(new \DateTimeImmutable($upcoming ? '2099-01-01' : '2020-01-01'));
+        $season->addEpisode($episode);
+        $series->addSeason($season);
+        $this->em->persist($series);
+        $this->em->flush();
+
+        $this->client->request('GET', '/series/'.$series->getId().'?saison=1');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#episode-'.$episode->getId().' img[src="'.$expectedImage.'"]');
+        if ($upcoming) {
+            self::assertSelectorExists('#episode-'.$episode->getId().' .episode-countdown');
+        } else {
+            self::assertSelectorNotExists('#episode-'.$episode->getId().' .episode-countdown');
+        }
+    }
+
+    public static function episodeFallbacks(): iterable
+    {
+        yield 'upcoming season cover' => ['/media/posters/season.jpg', '/media/posters/series.jpg', true, '/media/posters/season.jpg'];
+        yield 'aired season cover' => ['/media/posters/season.jpg', '/media/posters/series.jpg', false, '/media/posters/season.jpg'];
+        yield 'series poster' => [null, '/media/posters/series.jpg', false, '/media/posters/series.jpg'];
+        yield 'logo' => [null, null, true, '/images/zunatrack-mark.svg'];
     }
 
     public function testCalendarShowsTheSeasonCoverBetweenTheAiringDetailsAndEpisodeInformation(): void
