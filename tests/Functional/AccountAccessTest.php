@@ -119,7 +119,7 @@ class AccountAccessTest extends WebTestCase
         self::assertResponseRedirects('/mot-de-passe-oublie/verifiez-vos-emails');
     }
 
-    public function testLoginCreatesARememberMeCookieValidForFifteenDays(): void
+    public function testLoginCreatesARememberMeCookieValidForThirtyDays(): void
     {
         $user = new User();
         $user->setEmail('remember@example.test');
@@ -130,6 +130,8 @@ class AccountAccessTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/connexion');
         self::assertSelectorExists('input[name="_remember_me"][type="checkbox"]');
+        self::assertSelectorTextContains('label[for="remember_me"]', '30 jours');
+        self::assertSelectorNotExists('input[name="_remember_me"][checked]');
         $this->client->submit($crawler->selectButton('Se connecter')->form([
             '_username' => 'remember@example.test',
             '_password' => 'une phrase de passe solide',
@@ -140,7 +142,7 @@ class AccountAccessTest extends WebTestCase
         $cookies = $this->client->getResponse()->headers->getCookies();
         $rememberMe = array_values(array_filter($cookies, static fn ($cookie): bool => 'REMEMBERME' === $cookie->getName()));
         self::assertCount(1, $rememberMe);
-        self::assertSame(1296000, $rememberMe[0]->getMaxAge());
+        self::assertSame(2592000, $rememberMe[0]->getMaxAge());
     }
 
     public function testLoginWithoutRememberMeDoesNotCreateAPersistentCookie(): void
