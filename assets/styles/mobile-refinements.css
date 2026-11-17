@@ -2,9 +2,10 @@
 @media (max-width: 48rem) {
     .site-header { min-height: 4.75rem; padding-inline: 1rem; }
     .mobile-menu { position: static; }
-    .mobile-menu summary { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: .55rem .75rem; font-weight: 700; list-style: none; }
+    .mobile-menu > summary { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: .55rem .75rem; font-weight: 700; list-style: none; white-space: nowrap; }
+    .mobile-menu > summary::marker { content: ""; }
     .mobile-menu summary::-webkit-details-marker { display: none; }
-    .mobile-menu summary svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; transition: transform .18s ease; }
+    .mobile-menu summary svg { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; transition: transform .18s ease; }
     .mobile-menu[open] summary svg { transform: rotate(180deg); }
     .mobile-menu .mobile-menu__panel { position: fixed; inset: 4.75rem 1rem auto; z-index: 20; width: auto; gap: .35rem; padding: .7rem; border-radius: var(--radius-md); box-shadow: 0 18px 40px color-mix(in srgb, var(--foreground) 25%, transparent); }
     .mobile-menu a, .mobile-menu button, .mobile-menu form { display: flex; align-items: center; min-height: 44px; width: 100%; margin: 0; }
@@ -12,6 +13,53 @@
     .mobile-menu a:hover, .mobile-menu button:hover { background: var(--accent-soft); color: var(--accent); text-decoration: none; transform: none; }
     .mobile-menu form { padding-top: .35rem; border-top: 1px solid var(--line); }
     .mobile-menu form button { border: 0; background: transparent; color: var(--danger); cursor: pointer; }
+
+    .series-detail.series-detail--season {
+        grid-template-columns: clamp(5.5rem, 25vw, 9rem) minmax(0, 1fr);
+        gap: 1rem;
+    }
+    .series-detail--season > .series-cover { width: 100%; }
+    .series-detail--season > .series-summary { display: contents; }
+    .series-detail--season .series-overview { min-width: 0; align-self: center; }
+    .series-detail--season .series-overview .eyebrow { margin: 0; overflow-wrap: anywhere; }
+    .series-detail--season .series-overview .lede { margin: .5rem 0 0; font-size: .9rem; }
+    .series-detail--season .inline-toggle .button {
+        width: 100%;
+        min-height: 44px;
+        margin-top: .75rem;
+        padding: .6rem .65rem;
+        font-size: .875rem;
+        line-height: 1.35;
+        white-space: normal;
+    }
+    .series-detail--season .status-actions {
+        grid-column: 1 / -1;
+        flex-wrap: nowrap;
+        gap: .25rem;
+        margin: 0;
+    }
+    .series-detail--season .status-actions > span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .series-detail--season .status-actions button {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 44px;
+        padding-inline: .15rem;
+        letter-spacing: normal;
+        font-family: system-ui, sans-serif;
+        font-size: .6875rem;
+        white-space: nowrap;
+    }
+    .series-detail--season .season-navigation { position: static; flex-wrap: nowrap; gap: .5rem; margin-top: .5rem; }
+    .series-detail--season .season-navigation .button { flex: 1; min-width: 0; min-height: 44px; margin: 0; padding: .6rem .4rem; font-size: .875rem; white-space: normal; text-align: center; }
 
     .catalog-carousel { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .35rem; }
     .catalog-carousel__control { display: grid; width: 44px; height: 44px; font-size: 1.75rem; }

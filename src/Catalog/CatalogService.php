@@ -76,10 +76,10 @@ final class CatalogService
         $this->em->flush();
     }
 
-    public function import(string $id): Series
+    public function import(string $id, bool $forceRefresh = false): Series
     {
         $source = $this->sources->findByProviderId('tvmaze', $id);
-        if ($source?->isFresh() && \array_key_exists('name', $source->getPayload())) {
+        if (!$forceRefresh && $source?->isFresh() && \array_key_exists('name', $source->getPayload())) {
             $this->metrics->hit('local');
             $this->hydrate($source->getSeries(), $source->getPayload());
             $this->em->flush();
@@ -98,6 +98,21 @@ final class CatalogService
         $this->em->flush();
 
         return $series;
+    }
+
+    public function refreshAiredEpisodeImages(Episode $episode): void
+    {
+        $season = $episode->getSeason();
+        $series = $season->getSeries();
+        $source = $this->sources->findOneBy(['series' => $series, 'provider' => 'tvmaze']);
+        if (!$source) {
+            return;
+        }
+        if (!isset($source->getPayload()['name']) || !$source->isFresh() || ($episode->getAiredAt() !== null && $source->getFetchedAt() < $episode->getAiredAt())) {
+            $this->import($source->getExternalId(), true);
+        }
+        $this->hydrate($series, $source->getPayload(), $season->getNumber());
+        $this->em->flush();
     }
 
     public function repair(Series $series): array
@@ -122,7 +137,7 @@ final class CatalogService
                 }
                 foreach ($payload['_embedded']['episodes'] ?? [] as $row) {
                     if ((int) ($row['season'] ?? -1) === $season->getNumber() && (int) ($row['number'] ?? -1) === $episode->getNumber()) {
-                        $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null));
+                        $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $episode->getCoverUrl());
                         break;
                     }
                 }
@@ -198,7 +213,7 @@ final class CatalogService
             $episode->setAiredAt($this->dateTime($row['airstamp'] ?? null));
             $episode->setRuntime(isset($row['runtime']) ? (int) $row['runtime'] : null);
             if ($episodeSeason === $seasonNumber) {
-                $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null));
+                $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $episode->getCoverUrl());
             }$season->addEpisode($episode);
         }
     }
