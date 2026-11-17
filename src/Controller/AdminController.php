@@ -87,6 +87,28 @@ class AdminController extends AbstractController
         return $this->render('admin/series.html.twig', compact('series', 'page', 'pages', 'total'));
     }
 
+    #[Route('/series/verifier', name: 'app_admin_series_repair', methods: ['POST'])]
+    public function repairSeries(Request $request, EntityManagerInterface $em, CatalogService $catalog): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->isCsrfTokenValid('admin_series_repair', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        $after = max(0, $request->request->getInt('after'));
+        $total = $em->getRepository(Series::class)->count([]);
+        $series = $em->getRepository(Series::class)->createQueryBuilder('series')->where('series.id > :after')->setParameter('after', $after)->orderBy('series.id', 'ASC')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+        if (!$series) {
+            return $this->json(['done' => true, 'total' => $total]);
+        }
+        try {
+            $result = $catalog->repair($series);
+        } catch (\Throwable $e) {
+            return $this->json(['done' => false, 'retry' => true, 'error' => $e->getMessage(), 'total' => $total]);
+        }
+
+        return $this->json(['done' => false, 'after' => $series->getId(), 'title' => $series->getTitle(), 'total' => $total, ...$result]);
+    }
+
     #[Route('/bibliotheque', name: 'app_admin_library', methods: ['GET'])]
     public function library(EntityManagerInterface $em): Response
     {

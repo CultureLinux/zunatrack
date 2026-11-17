@@ -46,6 +46,11 @@ final class PosterCache
         }
     }
 
+    public function remoteFallback(?string $url): ?string
+    {
+        return $url !== null && $this->allowed($url) ? $url : null;
+    }
+
     private function allowed(string $url): bool
     {
         $parts = parse_url($url);

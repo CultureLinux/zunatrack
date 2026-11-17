@@ -358,6 +358,39 @@ class LibraryTest extends WebTestCase
         self::assertSame(LibraryEntry::STATUS_WATCHING, $entry->getStatus());
     }
 
+    public function testWatchingTheLastAiredEpisodeDoesNotCompleteASeasonWithUpcomingEpisodes(): void
+    {
+        $user = $this->user('upcoming-episode@example.test');
+        $series = new Series()->setTitle('Upcoming episode show');
+        $season = new Season(1);
+        $airedEpisode = new Episode(1);
+        $airedEpisode->setTitle('Already available');
+        $airedEpisode->setAirDate(new \DateTimeImmutable('2026-01-01'));
+        $upcomingEpisode = new Episode(2);
+        $upcomingEpisode->setTitle('Not available yet');
+        $upcomingEpisode->setAirDate(new \DateTimeImmutable('2026-12-01'));
+        $season->addEpisode($airedEpisode);
+        $season->addEpisode($upcomingEpisode);
+        $series->addSeason($season);
+        $this->em->persist($user);
+        $this->em->persist($series);
+        $this->em->flush();
+        $entry = new LibraryEntry($user, $series);
+        $this->em->persist($entry);
+        $this->em->flush();
+
+        $this->client->loginUser($user);
+        $crawler = $this->client->request('GET', '/series/'.$series->getId().'?saison=1');
+        $token = $crawler->filter('form.episode-toggle input[name="_token"]')->first()->attr('value');
+        $returnUrl = '/series/'.$series->getId().'?saison=1';
+        $this->client->request('POST', '/bibliotheque/'.$entry->getId().'/suivi/episode/'.$airedEpisode->getId(), ['_token' => $token, 'watched' => '1', 'return_anchor' => 'episode-'.$airedEpisode->getId()], [], ['HTTP_REFERER' => $returnUrl]);
+
+        self::assertResponseRedirects($returnUrl.'#episode-'.$airedEpisode->getId());
+        $this->em->clear();
+        $entry = $this->em->getRepository(LibraryEntry::class)->find($entry->getId());
+        self::assertSame(LibraryEntry::STATUS_WATCHING, $entry->getStatus());
+    }
+
     public function testManualWatchingStatusIsNotOverwrittenWhenViewingACompletedSeries(): void
     {
         $user = $this->user('manual-status@example.test');
@@ -438,6 +471,31 @@ class LibraryTest extends WebTestCase
         self::assertSelectorExists('.calendar-card');
         self::assertSelectorExists('.calendar-card__cover img[src="/media/posters/calendar-season.jpg"]');
         self::assertSelectorTextContains('.calendar-card__body', 'Calendar episode');
+    }
+
+    public function testCalendarAndLibraryUseTheSameCountdownForAnUpcomingEpisode(): void
+    {
+        $user = $this->user('countdown@example.test');
+        $series = new Series()->setTitle('Countdown show');
+        $season = new Season(1);
+        $episode = new Episode(1);
+        $episode->setTitle('Tomorrow at midnight');
+        $episode->setAirDate(new \DateTimeImmutable('tomorrow midnight'));
+        $episode->setAiredAt(new \DateTimeImmutable('tomorrow midnight'));
+        $season->addEpisode($episode);
+        $series->addSeason($season);
+        $this->em->persist($user);
+        $this->em->persist($series);
+        $this->em->flush();
+        $this->em->persist(new LibraryEntry($user, $series));
+        $this->em->flush();
+
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/series/'.$series->getId().'?saison=1');
+        self::assertSelectorTextContains('.episode-countdown strong', 'J-0');
+
+        $this->client->request('GET', '/calendrier');
+        self::assertSelectorTextContains('.calendar-card__countdown strong', 'Aujourd’hui');
     }
 
     public function testWatchingTheFirstEpisodeMovesAWatchlistEntryToWatching(): void

@@ -129,9 +129,11 @@ class AccountAccessTest extends WebTestCase
         $this->entityManager->flush();
 
         $crawler = $this->client->request('GET', '/connexion');
+        self::assertSelectorExists('input[name="_remember_me"][type="checkbox"]');
         $this->client->submit($crawler->selectButton('Se connecter')->form([
             '_username' => 'remember@example.test',
             '_password' => 'une phrase de passe solide',
+            '_remember_me' => '1',
         ]));
 
         self::assertResponseRedirects('/');
@@ -139,6 +141,30 @@ class AccountAccessTest extends WebTestCase
         $rememberMe = array_values(array_filter($cookies, static fn ($cookie): bool => 'REMEMBERME' === $cookie->getName()));
         self::assertCount(1, $rememberMe);
         self::assertSame(1296000, $rememberMe[0]->getMaxAge());
+    }
+
+    public function testLoginWithoutRememberMeDoesNotCreateAPersistentCookie(): void
+    {
+        $user = new User();
+        $user->setEmail('session@example.test');
+        $user->setRoles(['ROLE_USER']);
+        $user->setPassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, 'une phrase de passe solide'));
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        $crawler = $this->client->request('GET', '/connexion');
+        $csrfToken = $crawler->filter('input[name="_csrf_token"]')->attr('value');
+        self::assertNotNull($csrfToken);
+        $this->client->request('POST', '/connexion', [
+            '_username' => 'session@example.test',
+            '_password' => 'une phrase de passe solide',
+            '_csrf_token' => $csrfToken,
+        ]);
+
+        self::assertResponseRedirects('/');
+        $cookies = $this->client->getResponse()->headers->getCookies();
+        $rememberMe = array_filter($cookies, static fn ($cookie): bool => 'REMEMBERME' === $cookie->getName());
+        self::assertCount(0, array_filter($rememberMe, static fn ($cookie): bool => $cookie->getMaxAge() > 0));
     }
 
     public function testMobileMenuIncludesTheAccountExitAction(): void

@@ -47,6 +47,11 @@ class CatalogSource
         return $this->payload;
     }
 
+    public function getFetchedAt(): \DateTimeImmutable
+    {
+        return $this->fetchedAt;
+    }
+
     public function isFresh(): bool
     {
         return $this->expiresAt > new \DateTimeImmutable();
