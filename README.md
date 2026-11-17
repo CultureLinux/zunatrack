@@ -39,7 +39,7 @@ Les déploiements de production restent manuels depuis le pipeline GitLab et son
 
 Exécutez un worker permanent : `php85 bin/console messenger:consume async --time-limit=3600 --memory-limit=128M --env=prod`.
 
-Planifiez chaque minute `php85 bin/console app:notify-aired-episodes --env=prod`. Les imports et les notifications Push dépendent du worker ; les notifications nécessitent aussi cette commande de découverte.
+Planifiez chaque minute `php85 bin/console app:notify-aired-episodes --env=prod`. Cette commande récupère aussi les images manquantes des épisodes diffusés des bibliothèques actives, même sans appareil Push. Un snapshot antérieur à la dernière diffusion concernée est renouvelé ; sinon le cache de 24 heures est conservé. Les images sont téléchargées avant la mise en file des notifications : la couverture de l’épisode est envoyée dans `image`, avec l’affiche de série en repli. Si TVmaze échoue, une erreur est journalisée et les notifications restent envoyées avec les données locales. L’affichage de la grande image dépend du navigateur et du système. Les imports et les notifications Push dépendent du worker ; les notifications nécessitent aussi cette commande de découverte.
 
 Pour un serveur systemd avec l'utilisateur `zunatrack` et le code dans `/home/zunatrack/www`, installez les unités de [`deploy/systemd/`](deploy/systemd/) :
 
