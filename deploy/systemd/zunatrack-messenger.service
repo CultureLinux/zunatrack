@@ -1,0 +1,21 @@
+[Unit]
+Description=ZunaTrack Symfony Messenger worker
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=zunatrack
+Group=zunatrack
+WorkingDirectory=/home/zunatrack/www
+Environment=APP_ENV=prod
+ExecStart=/usr/bin/php85 bin/console messenger:consume async --env=prod --no-interaction --time-limit=3600 --memory-limit=128M
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

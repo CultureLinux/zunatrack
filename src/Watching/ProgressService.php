@@ -21,12 +21,16 @@ class ProgressService
 
     public function seasonProgress(User $user, Season $season): array
     {
-        return $this->progress($user, $this->aired($season->getEpisodes()->toArray()));
+        $episodes = $season->getEpisodes()->toArray();
+
+        return $this->progress($user, $this->aired($episodes), $episodes);
     }
 
     public function seriesProgress(User $user, Series $series): array
     {
-        return $this->progress($user, $this->standardAired($series));
+        $episodes = $this->standardEpisodes($series);
+
+        return $this->progress($user, $this->aired($episodes), $episodes);
     }
 
     public function allSeasonProgress(User $user, Series $series): array
@@ -147,12 +151,14 @@ class ProgressService
         return ['season' => $seasons[array_key_last($seasons)], 'episode' => null];
     }
 
-    private function progress(User $user, array $episodes): array
+    private function progress(User $user, array $episodes, array $completionEpisodes): array
     {
         $total = \count($episodes);
         $watched = \count($this->progresses->watchedEpisodeIds($user, $episodes));
+        $completionTotal = \count($completionEpisodes);
+        $completionWatched = \count($this->progresses->watchedEpisodeIds($user, $completionEpisodes));
 
-        return ['watched' => $watched, 'total' => $total, 'percent' => $total ? (int) round($watched * 100 / $total) : 0, 'complete' => $total > 0 && $watched === $total];
+        return ['watched' => $watched, 'total' => $total, 'percent' => $total ? (int) round($watched * 100 / $total) : 0, 'complete' => $completionTotal > 0 && $completionWatched === $completionTotal];
     }
 
     private function setWatched(User $user, array $episodes, bool $watched): void
@@ -174,6 +180,11 @@ class ProgressService
 
     private function standardAired(Series $series): array
     {
+        return $this->aired($this->standardEpisodes($series));
+    }
+
+    private function standardEpisodes(Series $series): array
+    {
         $episodes = [];
         foreach ($series->getSeasons() as $season) {
             if ($season->getNumber() !== 0) {
@@ -183,7 +194,7 @@ class ProgressService
             }
         }
 
-        return $this->aired($episodes);
+        return $episodes;
     }
 
     private function isAired(Episode $episode): bool

@@ -20,5 +20,7 @@ AGENTS.md
 
 ###> symfony/asset-mapper ###
 /public/assets/
+/public/media/posters/*
+!/public/media/posters/.gitkeep
 /assets/vendor/
 ###< symfony/asset-mapper ###

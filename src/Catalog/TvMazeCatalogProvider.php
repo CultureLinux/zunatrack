@@ -58,6 +58,6 @@ final class TvMazeCatalogProvider implements SeriesCatalogProvider
 
     private function normalize(array $show): array
     {
-        return ['id' => (string) $show['id'], 'title' => $show['name'], 'summary' => isset($show['summary']) ? strip_tags((string) $show['summary']) : null, 'posterUrl' => $show['image']['medium'] ?? null, 'premiered' => $show['premiered'] ?? null, 'weight' => isset($show['weight']) ? (float) $show['weight'] : null, 'rating' => isset($show['rating']['average']) ? (float) $show['rating']['average'] : null];
+        return ['id' => (string) $show['id'], 'title' => $show['name'], 'summary' => isset($show['summary']) ? strip_tags((string) $show['summary']) : null, 'posterUrl' => $show['image']['medium'] ?? $show['image']['original'] ?? null, 'premiered' => $show['premiered'] ?? null, 'weight' => isset($show['weight']) ? (float) $show['weight'] : null, 'rating' => isset($show['rating']['average']) ? (float) $show['rating']['average'] : null];
     }
 }

@@ -30,8 +30,8 @@ final class CatalogService
 
             return $this->provider->search($query);
         });
-        $results = array_map(fn (array $row) => [...$row, 'posterUrl' => $this->posters->store($row['posterUrl'])], $cached);
-        $this->rememberSearchResults($results);
+        $results = array_map(fn (array $row) => [...$row, 'posterUrl' => $this->posters->store($row['posterUrl']) ?? $this->sources->findByProviderId('tvmaze', $row['id'])?->getSeries()->getPosterUrl() ?? $this->posters->remoteFallback($row['posterUrl'])], $cached);
+        $this->rememberSearchResults($results, $cached);
         $this->metrics->hit('local');
 
         return $results;
@@ -76,10 +76,10 @@ final class CatalogService
         $this->em->flush();
     }
 
-    public function import(string $id): Series
+    public function import(string $id, bool $forceRefresh = false): Series
     {
         $source = $this->sources->findByProviderId('tvmaze', $id);
-        if ($source?->isFresh() && \array_key_exists('name', $source->getPayload())) {
+        if (!$forceRefresh && $source?->isFresh() && \array_key_exists('name', $source->getPayload())) {
             $this->metrics->hit('local');
             $this->hydrate($source->getSeries(), $source->getPayload());
             $this->em->flush();
@@ -100,6 +100,51 @@ final class CatalogService
         return $series;
     }
 
+    public function refreshAiredEpisodeImages(Episode $episode): void
+    {
+        $season = $episode->getSeason();
+        $series = $season->getSeries();
+        $source = $this->sources->findOneBy(['series' => $series, 'provider' => 'tvmaze']);
+        if (!$source) {
+            return;
+        }
+        if (!isset($source->getPayload()['name']) || !$source->isFresh() || ($episode->getAiredAt() !== null && $source->getFetchedAt() < $episode->getAiredAt())) {
+            $this->import($source->getExternalId(), true);
+        }
+        $this->hydrate($series, $source->getPayload(), $season->getNumber());
+        $this->em->flush();
+    }
+
+    public function repair(Series $series): array
+    {
+        $source = $this->sources->findOneBy(['series' => $series, 'provider' => 'tvmaze']);
+        if (!$source) {
+            return ['state' => 'skipped', 'reason' => 'Aucune source TVmaze.'];
+        }
+        $payload = $source->getPayload();
+        if (!$source->isFresh() || !isset($payload['name']) || !isset($payload['_embedded']['seasons'], $payload['_embedded']['episodes'])) {
+            $this->import($source->getExternalId(), true);
+            $payload = $source->getPayload();
+        }
+        if (!isset($payload['name'])) {
+            return ['state' => 'skipped', 'reason' => 'Données fournisseur incomplètes.'];
+        }
+        $this->hydrate($series, $payload);
+        foreach ($series->getSeasons() as $season) {
+            foreach ($season->getEpisodes() as $episode) {
+                foreach ($payload['_embedded']['episodes'] ?? [] as $row) {
+                    if ((int) ($row['season'] ?? -1) === $season->getNumber() && (int) ($row['number'] ?? -1) === $episode->getNumber()) {
+                        $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $episode->getCoverUrl());
+                        break;
+                    }
+                }
+            }
+        }
+        $this->em->flush();
+
+        return ['state' => 'repaired', 'reason' => 'Données et images vérifiées.'];
+    }
+
     private function refreshCast(CatalogSource $source): void
     {
         $this->guardRateLimit();
@@ -111,16 +156,22 @@ final class CatalogService
         $this->hydrate($source->getSeries(), $payload);
     }
 
-    /** @param list<array{id:string,title:string,summary:?string,posterUrl:?string,premiered:?string,weight:?float,rating:?float}> $results */
-    private function rememberSearchResults(array $results): void
+    /**
+     * @param list<array{id:string,title:string,summary:?string,posterUrl:?string,premiered:?string,weight:?float,rating:?float}> $results
+     * @param list<array>                                                                                                         $providerResults
+     */
+    private function rememberSearchResults(array $results, array $providerResults): void
     {
-        foreach ($results as $result) {
+        foreach ($results as $index => $result) {
             $source = $this->sources->findByProviderId('tvmaze', $result['id']);
             $series = $source?->getSeries() ?? new Series();
-            $series->setTitle($result['title'])->setSummary($result['summary'])->setPosterUrl($result['posterUrl'])->setPremieredAt($this->date($result['premiered']))->setPopularity($result['weight'])->setRating($result['rating'])->touch();
+            $series->setTitle($result['title'])->setSummary($result['summary'])->setPosterUrl($result['posterUrl'] ?? $series->getPosterUrl())->setPremieredAt($this->date($result['premiered']))->setPopularity($result['weight'])->setRating($result['rating'])->touch();
             if (!$source) {
                 $source = new CatalogSource('tvmaze', $result['id'], $series);
                 $this->em->persist($source);
+            }
+            if (!\array_key_exists('name', $source->getPayload())) {
+                $source->refresh([...$source->getPayload(), '_search' => $providerResults[$index]], new \DateTimeImmutable());
             }
             $this->em->persist($series);
         }
@@ -129,7 +180,7 @@ final class CatalogService
 
     private function hydrate(Series $series, array $payload, ?int $episodeSeason = null): void
     {
-        $series->setTitle($payload['name'])->setSummary(isset($payload['summary']) ? strip_tags((string) $payload['summary']) : null)->setPosterUrl($this->posters->store($payload['image']['medium'] ?? $payload['image']['original'] ?? null))->setStatus($payload['status'] ?? null)->setGenres($payload['genres'] ?? [])->setPremieredAt($this->date($payload['premiered'] ?? null))->setEndedAt($this->date($payload['ended'] ?? null));
+        $series->setTitle($payload['name'])->setSummary(isset($payload['summary']) ? strip_tags((string) $payload['summary']) : null)->setPosterUrl($this->posters->store($payload['image']['medium'] ?? $payload['image']['original'] ?? null) ?? $series->getPosterUrl())->setStatus($payload['status'] ?? null)->setGenres($payload['genres'] ?? [])->setPremieredAt($this->date($payload['premiered'] ?? null))->setEndedAt($this->date($payload['ended'] ?? null));
         if (\array_key_exists('cast', $payload['_embedded'] ?? [])) {
             $series->setCast($this->cast($payload['_embedded']['cast']));
         }
@@ -142,7 +193,7 @@ final class CatalogService
             $number = (int) $row['number'];
             $season = $seasons[$number] ?? new Season($number);
             $season->setName($row['name'] ?? null);
-            $season->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $series->getPosterUrl());
+            $season->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $season->getCoverUrl() ?? $series->getPosterUrl());
             $series->addSeason($season);
             $seasons[$number] = $season;
         }
@@ -165,7 +216,7 @@ final class CatalogService
             $episode->setAiredAt($this->dateTime($row['airstamp'] ?? null));
             $episode->setRuntime(isset($row['runtime']) ? (int) $row['runtime'] : null);
             if ($episodeSeason === $seasonNumber) {
-                $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null));
+                $episode->setCoverUrl($this->posters->store($row['image']['medium'] ?? $row['image']['original'] ?? null) ?? $episode->getCoverUrl());
             }$season->addEpisode($episode);
         }
     }
