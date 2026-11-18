@@ -25,7 +25,7 @@ security:
                 default_target_path: app_home
             remember_me:
                 secret: '%kernel.secret%'
-                lifetime: 1296000
+                lifetime: 2592000
                 always_remember_me: false
             logout:
                 path: app_logout
