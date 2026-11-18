@@ -24,6 +24,8 @@ Après chaque mise à jour : sauvegardez la base, déployez le code, lancez les 
 
 La vérification du catalogue depuis l’administration retélécharge aussi les images d’épisodes dont le fichier a disparu malgré une URL enregistrée, et recharge les snapshots incomplets. Les recherches conservent une affiche déjà connue si un nouveau téléchargement échoue. Pour un nouveau résultat, les données légères et l’URL d’affiche TVmaze sont conservées ; une URL HTTPS de static.tvmaze.com sert de repli si le cache local échoue. Une nouvelle recherche retente le téléchargement, sans ouverture de fiche ni import des saisons et épisodes.
 
+Sur la page de connexion, « Rester connecté pendant 30 jours » active un cookie de connexion persistante uniquement si la case est cochée. Les cartes d’épisodes utilisent la couverture de saison, l’affiche de série puis le logo lorsque l’image d’épisode manque ; le compte à rebours reste visible avant diffusion.
+
 ## Configuration et publication
 
 Copiez `.env.example` vers `.env` puis renseignez les valeurs propres à l'instance. Le fichier `.env` est ignoré par Git et ne doit jamais être versionné.

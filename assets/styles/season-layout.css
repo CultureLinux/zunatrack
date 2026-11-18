@@ -1,1 +1,10 @@
 .series-cover{display:grid;align-content:start;gap:.75rem}.series-cover .button{width:100%;margin:0}.series-summary{position:relative;min-width:0}.library-modal{margin:auto}.series-summary .season-navigation{position:absolute;top:0;right:0;margin:0}@media(max-width:48rem){.series-summary .season-navigation{position:static;margin-top:1.25rem}}
+
+.episode-artwork { container-type: inline-size; position: relative; min-width: 0; margin: 0; background: var(--surface-muted); }
+.episode-artwork img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.episode-artwork--fallback img { object-fit: contain; }
+.episode-artwork .episode-countdown { position: absolute; inset: auto .5rem .5rem auto; width: auto; min-height: 0; aspect-ratio: auto; gap: .15rem; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.episode-artwork .episode-countdown strong { font-size: .875rem; }
+.episode-artwork .episode-countdown small { font-size: .625rem; }
+
+@container (max-width: 10rem) { .episode-artwork .episode-countdown small { display: none; } }
